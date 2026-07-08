@@ -1,0 +1,48 @@
+id: tqqq_regime_switch
+display_name: TQQQ Regime Switch
+status: research
+execution_mode: manual
+universe:
+  risk_asset: TQQQ
+  defensive_asset: BIL
+  indicators:
+    - SPY
+    - QQQ
+rebalance: daily
+signal_timing: completed daily close, applied next trading day in local backtests
+hypothesis: >
+  Leveraged Nasdaq exposure is worth holding only when the broad market trend is
+  constructive; otherwise Treasury bills reduce leveraged decay and drawdown.
+rules:
+  - name: bear_gate
+    if: SPY close < SPY 200-day SMA
+    target: BIL
+  - name: confirmed_uptrend
+    if: SPY close > SPY 200-day SMA and SPY 10-day SMA > SPY 200-day SMA
+    target: TQQQ
+  - name: overbought_cooldown
+    if: TQQQ 10-day RSI > 79
+    target: BIL
+  - name: oversold_dip
+    if: QQQ 10-day RSI < 30
+    target: TQQQ
+  - name: weak_uptrend
+    if: SPY close > SPY 20-day SMA
+    target: TQQQ
+  - name: chop
+    if: no earlier rule matches
+    target: BIL
+risk_notes:
+  - TQQQ can suffer deep drawdowns even with trend filters.
+  - Historical Composer result cited by the strategy owner: Feb 2010 to May 2026 CAGR 36.9%, Sharpe 0.93, MaxDD -58.6%.
+  - 2022-style bear markets can still produce painful losses around regime transitions.
+validation_plan:
+  - Reproduce baseline against adjusted daily data.
+  - Compare next-day execution with Composer-compatible execution assumptions.
+  - Stress test SMA and RSI thresholds for broad plateaus, not peaks.
+  - Report yearly returns and drawdowns by market regime.
+manual_gate:
+  - Generate signal.
+  - Review latest reason and inputs.
+  - Check account-level concentration and tax constraints.
+  - Execute manually only if the operator accepts the risk.
