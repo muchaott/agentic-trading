@@ -7,4 +7,4 @@ dist/
 build/
 *.egg-info/
 prices.csv
-reports/
+.DS_Store

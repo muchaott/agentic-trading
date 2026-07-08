@@ -61,6 +61,8 @@ date,symbol,close
 - `strategies/tqqq_regime_switch.yaml` documents the strategy contract.
 - `src/agentic_trading/strategies/tqqq_regime_switch.py` implements the rule tree.
 - `src/agentic_trading/backtest.py` runs deterministic next-day allocation tests.
+- `reports/tqqq_strategy_1/` contains the saved Strategy 1 report, chart, trade log, summary, and price data.
+- `scripts/` contains one-off report/chart generators for the saved Strategy 1 package.
 - `state/signals/` is for generated daily signal artifacts.
 - `state/journal/` is for decision notes and postmortems.
 

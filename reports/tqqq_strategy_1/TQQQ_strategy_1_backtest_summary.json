@@ -1,0 +1,661 @@
+{
+  "methodology": {
+    "costs": "no commission, no slippage",
+    "data_source": "Yahoo Finance chart API adjusted close",
+    "execution_assumption": "completed close signal applied to next close-to-close return",
+    "period_end": "2026-07-07",
+    "period_start": "2016-07-08"
+  },
+  "summary": {
+    "allocation_changes": 51,
+    "cagr_pct": 31.497610544883848,
+    "final_equity": 1530846.150512898,
+    "initial_cash": 100000,
+    "max_drawdown_pct": -58.410111661432204,
+    "sharpe": 0.8153631402185094,
+    "tqqq_exposure_pct": 76.0653126244524,
+    "trade_periods": 52
+  },
+  "trades": [
+    {
+      "asset": "BIL",
+      "end_date": "2017-04-24",
+      "entry_price": 73.66290283203125,
+      "entry_reason": "warmup_insufficient_history",
+      "exit_price": 73.77413177490234,
+      "holding_trading_days": 199,
+      "return_pct": 0.15099723007756527,
+      "start_date": "2016-07-08",
+      "trade_number": 1
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2018-10-11",
+      "entry_price": 3.627150058746338,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_price": 6.360786437988281,
+      "holding_trading_days": 371,
+      "return_pct": 75.36595770693803,
+      "start_date": "2017-04-24",
+      "trade_number": 2
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2018-10-12",
+      "entry_price": 75.14067840576172,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 75.14067840576172,
+      "holding_trading_days": 1,
+      "return_pct": 0.0,
+      "start_date": "2018-10-11",
+      "trade_number": 3
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2018-10-23",
+      "entry_price": 6.898082733154297,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_price": 6.730474948883057,
+      "holding_trading_days": 7,
+      "return_pct": -2.4297734711946295,
+      "start_date": "2018-10-12",
+      "trade_number": 4
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2018-11-06",
+      "entry_price": 75.18173217773438,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 75.23927307128906,
+      "holding_trading_days": 10,
+      "return_pct": 0.07653573798840352,
+      "start_date": "2018-10-23",
+      "trade_number": 5
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2018-11-12",
+      "entry_price": 6.256180286407471,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 5.8139801025390625,
+      "holding_trading_days": 4,
+      "return_pct": -7.068213568415816,
+      "start_date": "2018-11-06",
+      "trade_number": 6
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2018-11-28",
+      "entry_price": 75.26395416259766,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 75.33795928955078,
+      "holding_trading_days": 11,
+      "return_pct": 0.09832745007423149,
+      "start_date": "2018-11-12",
+      "trade_number": 7
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2018-11-29",
+      "entry_price": 5.956624507904053,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 5.901944637298584,
+      "holding_trading_days": 1,
+      "return_pct": -0.91796739131218,
+      "start_date": "2018-11-28",
+      "trade_number": 8
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2018-11-30",
+      "entry_price": 75.34616088867188,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 75.35443115234375,
+      "holding_trading_days": 1,
+      "return_pct": 0.010976357088843258,
+      "start_date": "2018-11-29",
+      "trade_number": 9
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2018-12-04",
+      "entry_price": 6.02556848526001,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 5.638050079345703,
+      "holding_trading_days": 2,
+      "return_pct": -6.431233946842852,
+      "start_date": "2018-11-30",
+      "trade_number": 10
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2019-02-04",
+      "entry_price": 75.36019897460938,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 75.63993072509766,
+      "holding_trading_days": 40,
+      "return_pct": 0.3711929563542382,
+      "start_date": "2018-12-04",
+      "trade_number": 11
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2019-02-07",
+      "entry_price": 5.726609706878662,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 5.5932936668396,
+      "holding_trading_days": 3,
+      "return_pct": -2.3280098847827335,
+      "start_date": "2019-02-04",
+      "trade_number": 12
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2019-02-12",
+      "entry_price": 75.65645599365234,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 75.6812744140625,
+      "holding_trading_days": 3,
+      "return_pct": 0.032804101228633975,
+      "start_date": "2019-02-07",
+      "trade_number": 13
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2019-05-31",
+      "entry_price": 5.851591110229492,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 5.979886531829834,
+      "holding_trading_days": 75,
+      "return_pct": 2.1924878068814824,
+      "start_date": "2019-02-12",
+      "trade_number": 14
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2019-06-04",
+      "entry_price": 76.20403289794922,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 76.21736907958984,
+      "holding_trading_days": 2,
+      "return_pct": 0.017500624485955463,
+      "start_date": "2019-05-31",
+      "trade_number": 15
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2020-02-27",
+      "entry_price": 6.051330089569092,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_price": 9.031440734863281,
+      "holding_trading_days": 185,
+      "return_pct": 49.2472002218342,
+      "start_date": "2019-06-04",
+      "trade_number": 16
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2020-03-02",
+      "entry_price": 77.2182846069336,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 77.23267364501953,
+      "holding_trading_days": 2,
+      "return_pct": 0.018634236902803636,
+      "start_date": "2020-02-27",
+      "trade_number": 17
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2020-03-03",
+      "entry_price": 10.423917770385742,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_price": 9.442395210266113,
+      "holding_trading_days": 1,
+      "return_pct": -9.416062000298254,
+      "start_date": "2020-03-02",
+      "trade_number": 18
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2020-03-04",
+      "entry_price": 77.24954986572266,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 77.28330993652344,
+      "holding_trading_days": 1,
+      "return_pct": 0.04370261167794265,
+      "start_date": "2020-03-03",
+      "trade_number": 19
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2020-03-05",
+      "entry_price": 10.588297843933105,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_price": 9.659187316894531,
+      "holding_trading_days": 1,
+      "return_pct": -8.774880917908224,
+      "start_date": "2020-03-04",
+      "trade_number": 20
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2020-05-26",
+      "entry_price": 77.30020141601562,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 77.34747314453125,
+      "holding_trading_days": 56,
+      "return_pct": 0.06115343511359228,
+      "start_date": "2020-03-05",
+      "trade_number": 21
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-01-21",
+      "entry_price": 9.397130012512207,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 27.001407623291016,
+      "holding_trading_days": 419,
+      "return_pct": 187.3367462974211,
+      "start_date": "2020-05-26",
+      "trade_number": 22
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2022-01-24",
+      "entry_price": 77.24858093261719,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 77.25704193115234,
+      "holding_trading_days": 1,
+      "return_pct": 0.010952950116371873,
+      "start_date": "2022-01-21",
+      "trade_number": 23
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-01-25",
+      "entry_price": 27.392114639282227,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_price": 25.37189292907715,
+      "holding_trading_days": 1,
+      "return_pct": -7.375194419301745,
+      "start_date": "2022-01-24",
+      "trade_number": 24
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2022-01-28",
+      "entry_price": 77.24017333984375,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 77.24017333984375,
+      "holding_trading_days": 3,
+      "return_pct": 0.0,
+      "start_date": "2022-01-25",
+      "trade_number": 25
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-02-11",
+      "entry_price": 26.85846710205078,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_price": 25.38618278503418,
+      "holding_trading_days": 10,
+      "return_pct": -5.48163940787293,
+      "start_date": "2022-01-28",
+      "trade_number": 26
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2022-02-15",
+      "entry_price": 77.24017333984375,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 77.24858093261719,
+      "holding_trading_days": 2,
+      "return_pct": 0.010884999877514012,
+      "start_date": "2022-02-11",
+      "trade_number": 27
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-02-17",
+      "entry_price": 27.30158233642578,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_price": 24.876365661621094,
+      "holding_trading_days": 2,
+      "return_pct": -8.88306269182414,
+      "start_date": "2022-02-15",
+      "trade_number": 28
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2022-03-18",
+      "entry_price": 77.24017333984375,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 77.25874328613281,
+      "holding_trading_days": 20,
+      "return_pct": 0.02404182368591634,
+      "start_date": "2022-02-17",
+      "trade_number": 29
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-04-11",
+      "entry_price": 25.333772659301758,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 22.946674346923828,
+      "holding_trading_days": 16,
+      "return_pct": -9.42259309136676,
+      "start_date": "2022-03-18",
+      "trade_number": 30
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2022-08-16",
+      "entry_price": 77.26717376708984,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 77.4457015991211,
+      "holding_trading_days": 87,
+      "return_pct": 0.23105262341986954,
+      "start_date": "2022-04-11",
+      "trade_number": 31
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-08-17",
+      "entry_price": 18.41069984436035,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 17.772232055664062,
+      "holding_trading_days": 1,
+      "return_pct": -3.467916994431186,
+      "start_date": "2022-08-16",
+      "trade_number": 32
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2022-11-30",
+      "entry_price": 77.4457015991211,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 78.05912780761719,
+      "holding_trading_days": 73,
+      "return_pct": 0.792072633896912,
+      "start_date": "2022-08-17",
+      "trade_number": 33
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-12-05",
+      "entry_price": 11.225571632385254,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 10.591872215270996,
+      "holding_trading_days": 3,
+      "return_pct": -5.6451416272296,
+      "start_date": "2022-11-30",
+      "trade_number": 34
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2022-12-13",
+      "entry_price": 78.09329986572266,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 78.170166015625,
+      "holding_trading_days": 6,
+      "return_pct": 0.09842861043714013,
+      "start_date": "2022-12-05",
+      "trade_number": 35
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-12-14",
+      "entry_price": 10.639519691467285,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 10.386988639831543,
+      "holding_trading_days": 1,
+      "return_pct": -2.3735192843175823,
+      "start_date": "2022-12-13",
+      "trade_number": 36
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2023-01-11",
+      "entry_price": 78.1957778930664,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 78.36785125732422,
+      "holding_trading_days": 18,
+      "return_pct": 0.22005454628652998,
+      "start_date": "2022-12-14",
+      "trade_number": 37
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2023-01-18",
+      "entry_price": 9.296232223510742,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 9.32017993927002,
+      "holding_trading_days": 4,
+      "return_pct": 0.257606686058387,
+      "start_date": "2023-01-11",
+      "trade_number": 38
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2023-01-20",
+      "entry_price": 78.4449691772461,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 78.48778533935547,
+      "holding_trading_days": 2,
+      "return_pct": 0.054581144665410974,
+      "start_date": "2023-01-18",
+      "trade_number": 39
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2023-03-10",
+      "entry_price": 9.765594482421875,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_price": 10.000272750854492,
+      "holding_trading_days": 34,
+      "return_pct": 2.4031129784780614,
+      "start_date": "2023-01-20",
+      "trade_number": 40
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2023-03-14",
+      "entry_price": 78.94422912597656,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 78.97013092041016,
+      "holding_trading_days": 2,
+      "return_pct": 0.03281024429571122,
+      "start_date": "2023-03-10",
+      "trade_number": 41
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2023-03-15",
+      "entry_price": 10.910262107849121,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_price": 11.06831169128418,
+      "holding_trading_days": 1,
+      "return_pct": 1.4486323231533982,
+      "start_date": "2023-03-14",
+      "trade_number": 42
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2023-03-16",
+      "entry_price": 79.01321411132812,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 79.04769134521484,
+      "holding_trading_days": 1,
+      "return_pct": 0.04363476954392098,
+      "start_date": "2023-03-15",
+      "trade_number": 43
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2023-10-25",
+      "entry_price": 11.944771766662598,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_price": 15.892084121704102,
+      "holding_trading_days": 154,
+      "return_pct": 33.04636063502111,
+      "start_date": "2023-03-16",
+      "trade_number": 44
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2023-11-02",
+      "entry_price": 81.41358947753906,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 81.53631591796875,
+      "holding_trading_days": 6,
+      "return_pct": 0.15074441652465076,
+      "start_date": "2023-10-25",
+      "trade_number": 45
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2025-03-10",
+      "entry_price": 17.603986740112305,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 29.541990280151367,
+      "holding_trading_days": 336,
+      "return_pct": 67.81420434064076,
+      "start_date": "2023-11-02",
+      "trade_number": 46
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2025-03-24",
+      "entry_price": 87.15404510498047,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 87.28738403320312,
+      "holding_trading_days": 10,
+      "return_pct": 0.15299224271465572,
+      "start_date": "2025-03-10",
+      "trade_number": 47
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2025-03-26",
+      "entry_price": 32.66362762451172,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 31.397682189941406,
+      "holding_trading_days": 2,
+      "return_pct": -3.8757037311443976,
+      "start_date": "2025-03-24",
+      "trade_number": 48
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2025-05-12",
+      "entry_price": 87.3064193725586,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 87.76821899414062,
+      "holding_trading_days": 32,
+      "return_pct": 0.5289411991704851,
+      "start_date": "2025-03-26",
+      "trade_number": 49
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2026-03-20",
+      "entry_price": 32.750091552734375,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 42.91009521484375,
+      "holding_trading_days": 215,
+      "return_pct": 31.022825220960627,
+      "start_date": "2025-05-12",
+      "trade_number": 50
+    },
+    {
+      "asset": "BIL",
+      "end_date": "2026-04-08",
+      "entry_price": 90.77095031738281,
+      "entry_reason": "bear_gate_spy_below_200_sma",
+      "exit_price": 90.91389465332031,
+      "holding_trading_days": 12,
+      "return_pct": 0.15747806477479642,
+      "start_date": "2026-03-20",
+      "trade_number": 51
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2026-07-07",
+      "entry_price": 47.88973617553711,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_price": 72.2300033569336,
+      "holding_trading_days": 61,
+      "return_pct": 50.825644752308975,
+      "start_date": "2026-04-08",
+      "trade_number": 52
+    }
+  ],
+  "yearly_returns": [
+    {
+      "end_equity": 100043.73834300152,
+      "return_pct": 0.04373834300150925,
+      "start_equity": 100000,
+      "year": 2016
+    },
+    {
+      "end_equity": 151769.13127920614,
+      "return_pct": 51.63639055850824,
+      "start_equity": 100087.53882904294,
+      "year": 2017
+    },
+    {
+      "end_equity": 148174.84553589966,
+      "return_pct": -7.134689778486825,
+      "start_equity": 159558.8763796252,
+      "year": 2018
+    },
+    {
+      "end_equity": 252592.7174056992,
+      "return_pct": 70.48809329667031,
+      "start_equity": 148158.56786324468,
+      "year": 2019
+    },
+    {
+      "end_equity": 421901.58173011144,
+      "return_pct": 59.14037036834961,
+      "start_equity": 265112.85650119407,
+      "year": 2020
+    },
+    {
+      "end_equity": 772001.0153217752,
+      "return_pct": 91.34885685546385,
+      "start_equity": 403452.11777507997,
+      "year": 2021
+    },
+    {
+      "end_equity": 342581.54883278126,
+      "return_pct": -56.86890243375829,
+      "start_equity": 794279.6918317154,
+      "year": 2022
+    },
+    {
+      "end_equity": 668055.8134688073,
+      "return_pct": 94.985018154015,
+      "start_equity": 342619.0482702228,
+      "year": 2023
+    },
+    {
+      "end_equity": 1057316.8424520707,
+      "return_pct": 66.71875563159209,
+      "start_equity": 634191.8990737214,
+      "year": 2024
+    },
+    {
+      "end_equity": 1240145.5650558104,
+      "return_pct": 18.037615267110407,
+      "start_equity": 1050635.9030123174,
+      "year": 2025
+    },
+    {
+      "end_equity": 1530846.150512898,
+      "return_pct": 24.31331208184895,
+      "start_equity": 1231441.850334561,
+      "year": 2026
+    }
+  ]
+}
