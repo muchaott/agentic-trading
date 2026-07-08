@@ -33,13 +33,28 @@ class TqqqRegimeSwitchTests(unittest.TestCase):
         self.assertEqual(asset, DEFENSIVE_ASSET)
         self.assertEqual(reason, "overbought_cooldown_tqqq_rsi_10_above_79")
 
+    def test_overbought_threshold_is_strictly_greater_than_79(self):
+        asset, reason = decide(_inputs(spy_close=101, spy_sma_10=99, spy_sma_200=100, tqqq_rsi_10=79))
+        self.assertEqual(asset, RISK_ASSET)
+        self.assertEqual(reason, "weak_uptrend_spy_above_20_sma")
+
     def test_oversold_dip_when_not_overbought(self):
         asset, reason = decide(_inputs(spy_close=101, spy_sma_10=99, spy_sma_200=100, qqq_rsi_10=29))
         self.assertEqual(asset, RISK_ASSET)
         self.assertEqual(reason, "oversold_dip_qqq_rsi_10_below_30")
 
+    def test_oversold_threshold_is_strictly_less_than_30(self):
+        asset, reason = decide(_inputs(spy_close=101, spy_sma_10=99, spy_sma_200=100, qqq_rsi_10=30))
+        self.assertEqual(asset, RISK_ASSET)
+        self.assertEqual(reason, "weak_uptrend_spy_above_20_sma")
+
     def test_weak_uptrend_fallback(self):
         asset, reason = decide(_inputs(spy_close=101, spy_sma_10=99, spy_sma_20=100, spy_sma_200=100))
+        self.assertEqual(asset, RISK_ASSET)
+        self.assertEqual(reason, "weak_uptrend_spy_above_20_sma")
+
+    def test_spy_200_day_thresholds_are_strict(self):
+        asset, reason = decide(_inputs(spy_close=100, spy_sma_10=101, spy_sma_20=99, spy_sma_200=100))
         self.assertEqual(asset, RISK_ASSET)
         self.assertEqual(reason, "weak_uptrend_spy_above_20_sma")
 
