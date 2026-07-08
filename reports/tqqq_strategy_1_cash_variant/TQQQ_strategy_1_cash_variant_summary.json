@@ -1,0 +1,668 @@
+{
+  "comparison_to_bil_strategy_1": {
+    "cagr_delta_pct_points": -0.4458411109813163,
+    "final_equity_delta": -50938.88656452927,
+    "max_drawdown_delta_pct_points": -0.48129731976440127,
+    "sharpe_delta": -0.00712464871717855
+  },
+  "methodology": {
+    "costs": "no commission, no slippage, no taxes",
+    "execution_assumption": "completed close signal applied to next close-to-close return",
+    "period_end": "2026-07-07",
+    "period_start": "2016-07-08",
+    "source_price_data": "reports/tqqq_strategy_1/TQQQ_strategy_1_price_data.csv",
+    "variant": "Replace BIL allocations with cash earning 0% daily return"
+  },
+  "summary": {
+    "allocation_changes": 51,
+    "cagr_pct": 31.051769433902532,
+    "final_equity": 1479907.2639483688,
+    "initial_cash": 100000.0,
+    "max_drawdown_pct": -58.891408981196605,
+    "sharpe": 0.8082384915013309,
+    "tqqq_exposure_pct": 76.0653126244524,
+    "trade_periods": 52
+  },
+  "trades": [
+    {
+      "asset": "CASH",
+      "end_date": "2017-04-24",
+      "entry_equity": 100000.0,
+      "entry_reason": "warmup_insufficient_history_to_cash",
+      "exit_equity": 100000.0,
+      "holding_trading_days": 199,
+      "return_pct": 0.0,
+      "start_date": "2016-07-08",
+      "trade_number": 1
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2018-10-11",
+      "entry_equity": 100000.0,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_equity": 175365.95770693803,
+      "holding_trading_days": 371,
+      "return_pct": 75.36595770693803,
+      "start_date": "2017-04-24",
+      "trade_number": 2
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2018-10-12",
+      "entry_equity": 175365.95770693803,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 175365.95770693803,
+      "holding_trading_days": 1,
+      "return_pct": 0.0,
+      "start_date": "2018-10-11",
+      "trade_number": 3
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2018-10-23",
+      "entry_equity": 175365.95770693803,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_equity": 171104.96218906846,
+      "holding_trading_days": 7,
+      "return_pct": -2.4297734711946295,
+      "start_date": "2018-10-12",
+      "trade_number": 4
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2018-11-06",
+      "entry_equity": 171104.96218906846,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 171104.96218906846,
+      "holding_trading_days": 10,
+      "return_pct": 0.0,
+      "start_date": "2018-10-23",
+      "trade_number": 5
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2018-11-12",
+      "entry_equity": 171104.96218906846,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 159010.89803538797,
+      "holding_trading_days": 4,
+      "return_pct": -7.068213568415816,
+      "start_date": "2018-11-06",
+      "trade_number": 6
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2018-11-28",
+      "entry_equity": 159010.89803538797,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 159010.89803538797,
+      "holding_trading_days": 11,
+      "return_pct": 0.0,
+      "start_date": "2018-11-12",
+      "trade_number": 7
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2018-11-29",
+      "entry_equity": 159010.89803538797,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 157551.22984279046,
+      "holding_trading_days": 1,
+      "return_pct": -0.91796739131218,
+      "start_date": "2018-11-28",
+      "trade_number": 8
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2018-11-30",
+      "entry_equity": 157551.22984279046,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 157551.22984279046,
+      "holding_trading_days": 1,
+      "return_pct": 0.0,
+      "start_date": "2018-11-29",
+      "trade_number": 9
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2018-12-04",
+      "entry_equity": 157551.22984279046,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 147418.7416654725,
+      "holding_trading_days": 2,
+      "return_pct": -6.431233946842852,
+      "start_date": "2018-11-30",
+      "trade_number": 10
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2019-02-04",
+      "entry_equity": 147418.7416654725,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 147418.7416654725,
+      "holding_trading_days": 40,
+      "return_pct": 0.0,
+      "start_date": "2018-12-04",
+      "trade_number": 11
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2019-02-07",
+      "entry_equity": 147418.7416654725,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 143986.81878747797,
+      "holding_trading_days": 3,
+      "return_pct": -2.3280098847827446,
+      "start_date": "2019-02-04",
+      "trade_number": 12
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2019-02-12",
+      "entry_equity": 143986.81878747797,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 143986.81878747797,
+      "holding_trading_days": 3,
+      "return_pct": 0.0,
+      "start_date": "2019-02-07",
+      "trade_number": 13
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2019-05-31",
+      "entry_equity": 143986.81878747797,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 147143.71223291018,
+      "holding_trading_days": 75,
+      "return_pct": 2.192487806881638,
+      "start_date": "2019-02-12",
+      "trade_number": 14
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2019-06-04",
+      "entry_equity": 147143.71223291018,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 147143.71223291018,
+      "holding_trading_days": 2,
+      "return_pct": 0.0,
+      "start_date": "2019-05-31",
+      "trade_number": 15
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2020-02-27",
+      "entry_equity": 147143.71223291018,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_equity": 219607.87081009112,
+      "holding_trading_days": 185,
+      "return_pct": 49.247200221834284,
+      "start_date": "2019-06-04",
+      "trade_number": 16
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2020-03-02",
+      "entry_equity": 219607.87081009112,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 219607.87081009112,
+      "holding_trading_days": 2,
+      "return_pct": 0.0,
+      "start_date": "2020-02-27",
+      "trade_number": 17
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2020-03-03",
+      "entry_equity": 219607.87081009112,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_equity": 198929.45753707804,
+      "holding_trading_days": 1,
+      "return_pct": -9.416062000298254,
+      "start_date": "2020-03-02",
+      "trade_number": 18
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2020-03-04",
+      "entry_equity": 198929.45753707804,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 198929.45753707804,
+      "holding_trading_days": 1,
+      "return_pct": 0.0,
+      "start_date": "2020-03-03",
+      "trade_number": 19
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2020-03-05",
+      "entry_equity": 198929.45753707804,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_equity": 181473.63452755864,
+      "holding_trading_days": 1,
+      "return_pct": -8.774880917908224,
+      "start_date": "2020-03-04",
+      "trade_number": 20
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2020-05-26",
+      "entry_equity": 181473.63452755864,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 181473.63452755864,
+      "holding_trading_days": 56,
+      "return_pct": 0.0,
+      "start_date": "2020-03-05",
+      "trade_number": 21
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-01-21",
+      "entry_equity": 181473.63452755864,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 521440.43683916057,
+      "holding_trading_days": 419,
+      "return_pct": 187.33674629742123,
+      "start_date": "2020-05-26",
+      "trade_number": 22
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2022-01-24",
+      "entry_equity": 521440.43683916057,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 521440.43683916057,
+      "holding_trading_days": 1,
+      "return_pct": 0.0,
+      "start_date": "2022-01-21",
+      "trade_number": 23
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-01-25",
+      "entry_equity": 521440.43683916057,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_equity": 482983.19084141613,
+      "holding_trading_days": 1,
+      "return_pct": -7.375194419301745,
+      "start_date": "2022-01-24",
+      "trade_number": 24
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2022-01-28",
+      "entry_equity": 482983.19084141613,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 482983.19084141613,
+      "holding_trading_days": 3,
+      "return_pct": 0.0,
+      "start_date": "2022-01-25",
+      "trade_number": 25
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-02-11",
+      "entry_equity": 482983.19084141613,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_equity": 456507.79391885095,
+      "holding_trading_days": 10,
+      "return_pct": -5.48163940787293,
+      "start_date": "2022-01-28",
+      "trade_number": 26
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2022-02-15",
+      "entry_equity": 456507.79391885095,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 456507.79391885095,
+      "holding_trading_days": 2,
+      "return_pct": 0.0,
+      "start_date": "2022-02-11",
+      "trade_number": 27
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-02-17",
+      "entry_equity": 456507.79391885095,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_equity": 415955.9203919761,
+      "holding_trading_days": 2,
+      "return_pct": -8.88306269182414,
+      "start_date": "2022-02-15",
+      "trade_number": 28
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2022-03-18",
+      "entry_equity": 415955.9203919761,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 415955.9203919761,
+      "holding_trading_days": 20,
+      "return_pct": 0.0,
+      "start_date": "2022-02-17",
+      "trade_number": 29
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-04-11",
+      "entry_equity": 415955.9203919761,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 376762.0865739907,
+      "holding_trading_days": 16,
+      "return_pct": -9.42259309136676,
+      "start_date": "2022-03-18",
+      "trade_number": 30
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2022-08-16",
+      "entry_equity": 376762.0865739907,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 376762.0865739907,
+      "holding_trading_days": 87,
+      "return_pct": 0.0,
+      "start_date": "2022-04-11",
+      "trade_number": 31
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-08-17",
+      "entry_equity": 376762.0865739907,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 363696.29014511773,
+      "holding_trading_days": 1,
+      "return_pct": -3.467916994431186,
+      "start_date": "2022-08-16",
+      "trade_number": 32
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2022-11-30",
+      "entry_equity": 363696.29014511773,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 363696.29014511773,
+      "holding_trading_days": 73,
+      "return_pct": 0.0,
+      "start_date": "2022-08-17",
+      "trade_number": 33
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-12-05",
+      "entry_equity": 363696.29014511773,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 343165.1194734459,
+      "holding_trading_days": 3,
+      "return_pct": -5.6451416272296,
+      "start_date": "2022-11-30",
+      "trade_number": 34
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2022-12-13",
+      "entry_equity": 343165.1194734459,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 343165.1194734459,
+      "holding_trading_days": 6,
+      "return_pct": 0.0,
+      "start_date": "2022-12-05",
+      "trade_number": 35
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2022-12-14",
+      "entry_equity": 343165.1194734459,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 335020.0291856922,
+      "holding_trading_days": 1,
+      "return_pct": -2.3735192843175934,
+      "start_date": "2022-12-13",
+      "trade_number": 36
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2023-01-11",
+      "entry_equity": 335020.0291856922,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 335020.0291856922,
+      "holding_trading_days": 18,
+      "return_pct": 0.0,
+      "start_date": "2022-12-14",
+      "trade_number": 37
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2023-01-18",
+      "entry_equity": 335020.0291856922,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 335883.0631805093,
+      "holding_trading_days": 4,
+      "return_pct": 0.257606686058387,
+      "start_date": "2023-01-11",
+      "trade_number": 38
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2023-01-20",
+      "entry_equity": 335883.0631805093,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 335883.0631805093,
+      "holding_trading_days": 2,
+      "return_pct": 0.0,
+      "start_date": "2023-01-18",
+      "trade_number": 39
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2023-03-10",
+      "entry_equity": 335883.0631805093,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_equity": 343954.71266430983,
+      "holding_trading_days": 34,
+      "return_pct": 2.4031129784780614,
+      "start_date": "2023-01-20",
+      "trade_number": 40
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2023-03-14",
+      "entry_equity": 343954.71266430983,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 343954.71266430983,
+      "holding_trading_days": 2,
+      "return_pct": 0.0,
+      "start_date": "2023-03-10",
+      "trade_number": 41
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2023-03-15",
+      "entry_equity": 343954.71266430983,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_equity": 348937.3518089744,
+      "holding_trading_days": 1,
+      "return_pct": 1.4486323231533982,
+      "start_date": "2023-03-14",
+      "trade_number": 42
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2023-03-16",
+      "entry_equity": 348937.3518089744,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 348937.3518089744,
+      "holding_trading_days": 1,
+      "return_pct": 0.0,
+      "start_date": "2023-03-15",
+      "trade_number": 43
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2023-10-25",
+      "entry_equity": 348937.3518089744,
+      "entry_reason": "confirmed_uptrend_spy_above_200_and_10_above_200",
+      "exit_equity": 464248.44747806055,
+      "holding_trading_days": 154,
+      "return_pct": 33.04636063502113,
+      "start_date": "2023-03-16",
+      "trade_number": 44
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2023-11-02",
+      "entry_equity": 464248.44747806055,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 464248.44747806055,
+      "holding_trading_days": 6,
+      "return_pct": 0.0,
+      "start_date": "2023-10-25",
+      "trade_number": 45
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2025-03-10",
+      "entry_equity": 464248.44747806055,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 779074.8382990833,
+      "holding_trading_days": 336,
+      "return_pct": 67.81420434064043,
+      "start_date": "2023-11-02",
+      "trade_number": 46
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2025-03-24",
+      "entry_equity": 779074.8382990833,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 779074.8382990833,
+      "holding_trading_days": 10,
+      "return_pct": 0.0,
+      "start_date": "2025-03-10",
+      "trade_number": 47
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2025-03-26",
+      "entry_equity": 779074.8382990833,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 748880.2057227185,
+      "holding_trading_days": 2,
+      "return_pct": -3.8757037311443976,
+      "start_date": "2025-03-24",
+      "trade_number": 48
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2025-05-12",
+      "entry_equity": 748880.2057227185,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 748880.2057227185,
+      "holding_trading_days": 32,
+      "return_pct": 0.0,
+      "start_date": "2025-03-26",
+      "trade_number": 49
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2026-03-20",
+      "entry_equity": 748880.2057227185,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 981204.0030584472,
+      "holding_trading_days": 215,
+      "return_pct": 31.022825220960538,
+      "start_date": "2025-05-12",
+      "trade_number": 50
+    },
+    {
+      "asset": "CASH",
+      "end_date": "2026-04-08",
+      "entry_equity": 981204.0030584472,
+      "entry_reason": "bear_gate_spy_below_200_sma_to_cash",
+      "exit_equity": 981204.0030584472,
+      "holding_trading_days": 12,
+      "return_pct": 0.0,
+      "start_date": "2026-03-20",
+      "trade_number": 51
+    },
+    {
+      "asset": "TQQQ",
+      "end_date": "2026-07-07",
+      "entry_equity": 981204.0030584472,
+      "entry_reason": "weak_uptrend_spy_above_20_sma",
+      "exit_equity": 1479907.2639483688,
+      "holding_trading_days": 61,
+      "return_pct": 50.82564475230902,
+      "start_date": "2026-04-08",
+      "trade_number": 52
+    }
+  ],
+  "yearly_returns": [
+    {
+      "end_equity": 100000.0,
+      "return_pct": 0.0,
+      "start_equity": 100000.0,
+      "year": 2016
+    },
+    {
+      "end_equity": 151540.30960924507,
+      "return_pct": 51.54030960924507,
+      "start_equity": 100000.0,
+      "year": 2017
+    },
+    {
+      "end_equity": 147418.7416654725,
+      "return_pct": -7.469052658197517,
+      "start_equity": 159318.31014430078,
+      "year": 2018
+    },
+    {
+      "end_equity": 250686.6859921634,
+      "return_pct": 70.05075688478601,
+      "start_equity": 147418.7416654725,
+      "year": 2019
+    },
+    {
+      "end_equity": 418201.3363838306,
+      "return_pct": 58.94401640856852,
+      "start_equity": 263112.3497652383,
+      "year": 2020
+    },
+    {
+      "end_equity": 765230.2581405529,
+      "return_pct": 91.348856855464,
+      "start_equity": 399913.6815949583,
+      "year": 2021
+    },
+    {
+      "end_equity": 335020.0291856922,
+      "return_pct": -57.447698862604746,
+      "start_equity": 787313.5417611393,
+      "year": 2022
+    },
+    {
+      "end_equity": 651259.5745942724,
+      "return_pct": 94.39422060144874,
+      "start_equity": 335020.0291856922,
+      "year": 2023
+    },
+    {
+      "end_equity": 1030733.8146662884,
+      "return_pct": 66.7187556315919,
+      "start_equity": 618247.0657014503,
+      "year": 2024
+    },
+    {
+      "end_equity": 1200767.7094551073,
+      "return_pct": 17.237186953903148,
+      "start_equity": 1024220.8472020408,
+      "year": 2025
+    },
+    {
+      "end_equity": 1479907.2639483688,
+      "return_pct": 24.117853687821334,
+      "start_equity": 1192340.3603728123,
+      "year": 2026
+    }
+  ]
+}
