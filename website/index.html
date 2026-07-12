@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Strategy Ledger | ETF Strategy Research</title>
+    <meta
+      name="description"
+      content="A trust-first ETF strategy research product prototype with transparent methodology, constrained backtests, and review controls."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="topbar">
+      <div class="brand-lockup" aria-label="Strategy Ledger">
+        <div class="brand-mark" aria-hidden="true">SL</div>
+        <div>
+          <p class="eyebrow">ETF strategy research</p>
+          <h1>Strategy Ledger</h1>
+        </div>
+      </div>
+
+      <nav class="primary-nav" aria-label="Product sections">
+        <button class="nav-button is-active" type="button" data-view-button="research" aria-controls="research-view">
+          Research
+        </button>
+        <button class="nav-button" type="button" data-view-button="methodology" aria-controls="methodology-view">
+          Methodology
+        </button>
+        <button class="nav-button" type="button" data-view-button="data-risk" aria-controls="data-risk-view">
+          Data & risk
+        </button>
+      </nav>
+
+      <button class="primary-action" type="button" data-open-waitlist aria-haspopup="dialog">
+        Join waitlist
+      </button>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <section class="notice-band" aria-label="Prototype notice" role="note">
+        <div>
+          <strong>Research-only MVP prototype.</strong>
+          Seeded demo data is used to show product behavior. This is not investment advice,
+          a live signal service, or a performance claim.
+        </div>
+        <button class="text-button" type="button" data-open-waitlist aria-haspopup="dialog">
+          Share pricing interest
+        </button>
+      </section>
+
+      <section class="view is-visible" id="research-view" data-view="research" aria-labelledby="research-heading">
+        <h2 class="sr-only" id="research-heading">Strategy research workbench</h2>
+        <div class="product-shell">
+          <aside class="catalog-panel" aria-labelledby="catalog-heading">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Catalog</p>
+                <h2 id="catalog-heading">ETF research variants</h2>
+              </div>
+              <span class="count-pill" id="catalogCount">0</span>
+            </div>
+            <p class="panel-copy">
+              Limited U.S.-listed ETF universe, sorted by recent research updates rather than
+              highest return.
+            </p>
+
+            <form class="filter-grid" aria-label="Catalog filters" aria-describedby="catalog-filter-note">
+              <label>
+                <span>ETF category</span>
+                <select id="categoryFilter">
+                  <option value="all">All categories</option>
+                  <option value="Broad market">Broad market</option>
+                  <option value="Technology">Technology</option>
+                  <option value="Sector">Sector</option>
+                  <option value="Small cap">Small cap</option>
+                  <option value="International">International</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Risk band</span>
+                <select id="riskFilter">
+                  <option value="all">All risk bands</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="Elevated">Elevated</option>
+                  <option value="High">High</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Status</span>
+                <select id="statusFilter">
+                  <option value="all">All statuses</option>
+                  <option value="research">Research</option>
+                  <option value="paper-live">Paper-live</option>
+                  <option value="retired">Retired</option>
+                </select>
+              </label>
+              <p class="filter-note" id="catalog-filter-note">
+                Filters are constrained to approved MVP fields; arbitrary ticker search is excluded.
+              </p>
+            </form>
+
+            <div class="catalog-list" id="catalogList" aria-live="polite"></div>
+          </aside>
+
+          <section class="report-panel" aria-labelledby="reportTitle">
+            <div class="report-hero">
+              <div>
+                <p class="eyebrow" id="reportFamily">Baseline ETF mean reversion</p>
+                <h2 id="reportTitle">Select a strategy</h2>
+                <p id="reportSummary" class="report-summary"></p>
+              </div>
+              <div class="status-stack">
+                <span class="status-badge" id="reportStatus">Research</span>
+                <span class="status-badge performance-label">Hypothetical backtest</span>
+                <span class="asof" id="reportAsOf">Data as of --</span>
+              </div>
+            </div>
+
+            <section class="report-context" aria-label="Report assumptions and limitations">
+              <article>
+                <span>Research status</span>
+                <strong>Educational research artifact</strong>
+                <p>No public current buy/sell/hold calls, brokerage execution, or personalized advice.</p>
+              </article>
+              <article>
+                <span>Run controls</span>
+                <strong>Precomputed, versioned only</strong>
+                <p>Approved timeframes, benchmark choices, and gross/net display are the only controls.</p>
+              </article>
+              <article>
+                <span>Cost model</span>
+                <strong>Gross or estimated net</strong>
+                <p>Estimated net mode includes stated fee and slippage assumptions, not guarantees.</p>
+              </article>
+            </section>
+
+            <div class="metric-grid" id="metricGrid" aria-label="Key metrics"></div>
+
+            <section class="chart-section" aria-label="Backtest viewer">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Backtest viewer</p>
+                  <h3>Versioned research run</h3>
+                </div>
+
+                <fieldset class="control-row" aria-describedby="backtestConstraints">
+                  <legend>Backtest controls</legend>
+                  <label>
+                    <span>Timeframe</span>
+                    <select id="timeframeControl">
+                      <option value="5Y">5Y</option>
+                      <option value="10Y" selected>10Y</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Display</span>
+                    <select id="costControl">
+                      <option value="estimatedNet" selected>Estimated net</option>
+                      <option value="gross">Gross</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Benchmark</span>
+                    <select id="benchmarkControl">
+                      <option value="SPY">SPY</option>
+                      <option value="QQQ">QQQ</option>
+                      <option value="IWM">IWM</option>
+                    </select>
+                  </label>
+                </fieldset>
+              </div>
+              <p class="sr-only" id="backtestConstraints">
+                This viewer only changes approved windows, display treatment, and benchmarks.
+                It does not optimize parameters or search arbitrary securities.
+              </p>
+
+              <div class="chart-grid">
+                <div class="chart-card">
+                  <div class="chart-title-row">
+                    <h4>Growth of $10,000</h4>
+                    <div class="legend" aria-label="Chart legend">
+                      <span><i class="legend-line strategy-line"></i> Strategy</span>
+                      <span><i class="legend-line benchmark-line"></i> Benchmark</span>
+                    </div>
+                  </div>
+                  <canvas id="equityChart" width="760" height="320" role="img" aria-label="Equity curve chart comparing selected strategy and benchmark">
+                    Equity curve comparing the selected strategy and benchmark for the approved timeframe.
+                  </canvas>
+                </div>
+
+                <div class="chart-card compact-chart">
+                  <div class="chart-title-row">
+                    <h4>Drawdown</h4>
+                    <span class="chart-note">Losses are intentionally prominent</span>
+                  </div>
+                  <canvas id="drawdownChart" width="760" height="180" role="img" aria-label="Drawdown chart for selected strategy">
+                    Drawdown chart for the selected strategy.
+                  </canvas>
+                </div>
+              </div>
+              <div class="assumption-strip" aria-label="Backtest assumptions">
+                <span>Initial capital normalized to $10,000</span>
+                <span>Sample period is fixed per research run</span>
+                <span>Fee and slippage assumptions are versioned</span>
+              </div>
+            </section>
+
+            <section class="details-grid" aria-label="Research details">
+              <article>
+                <p class="eyebrow">Rules</p>
+                <h3>Methodology snapshot</h3>
+                <ul id="rulesList" class="check-list"></ul>
+              </article>
+
+              <article>
+                <p class="eyebrow">Recent research events</p>
+                <h3>Historical rule-trigger samples</h3>
+                <p class="panel-copy">
+                  These are delayed demo research events, not current trade instructions.
+                </p>
+                <div id="eventsList" class="event-list"></div>
+              </article>
+
+              <article>
+                <p class="eyebrow">Report slices</p>
+                <h3>Required analysis views</h3>
+                <div class="report-mini-table" aria-label="Included report analysis views">
+                  <span>Equity curve</span>
+                  <strong>Visible</strong>
+                  <span>Drawdown chart</span>
+                  <strong>Prominent</strong>
+                  <span>Monthly/yearly returns</span>
+                  <strong>Approved summary slot</strong>
+                  <span>Worst month/year</span>
+                  <strong>Metric model</strong>
+                </div>
+              </article>
+
+              <article>
+                <p class="eyebrow">Accessible chart summary</p>
+                <h3>Selected run summary</h3>
+                <div id="chartSummary" class="chart-summary" aria-live="polite"></div>
+              </article>
+            </section>
+          </section>
+
+          <aside class="trust-panel" aria-label="Trust and governance">
+            <section class="trust-block">
+              <p class="eyebrow">Disclosure state</p>
+              <h2>Trust checks</h2>
+              <div id="trustChecks" class="trust-list"></div>
+            </section>
+
+            <section class="trust-block">
+              <p class="eyebrow">Publication workflow</p>
+              <h2>Current review</h2>
+              <div class="review-stepper" id="reviewStepper"></div>
+            </section>
+
+            <section class="trust-block">
+              <p class="eyebrow">CTA</p>
+              <h2>Validate demand</h2>
+              <p>
+                MVP conversion is waitlist and pricing-interest capture, not paid live signals.
+              </p>
+              <button class="primary-action wide" type="button" data-open-waitlist aria-haspopup="dialog">
+                Join research waitlist
+              </button>
+            </section>
+
+            <section class="trust-block">
+              <p class="eyebrow">Risk treatment</p>
+              <h2>Guardrails</h2>
+              <ul class="plain-list">
+                <li>Results may be delayed, revised, incomplete, or affected by survivorship bias.</li>
+                <li>No guarantee of future performance or suitability for any investor.</li>
+                <li>Conflicts and data rights must be reviewed before paid access.</li>
+              </ul>
+              <button class="text-button" type="button" data-view-button="data-risk" aria-controls="data-risk-view">
+                Open data and risk details
+              </button>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="methodology-view" data-view="methodology" aria-labelledby="methodology-heading">
+        <div class="content-page">
+          <div class="page-intro">
+            <p class="eyebrow">Trust architecture</p>
+            <h2 id="methodology-heading">Methodology is part of the product, not a footer.</h2>
+            <p>
+              The MVP presents constrained, versioned research artifacts. It does not let users
+              optimize parameters, mine arbitrary tickers, or convert backtests into live advice.
+            </p>
+          </div>
+
+          <div class="method-grid">
+            <article>
+              <h3>Strategy versioning</h3>
+              <p>
+                Every report carries a strategy rule version, methodology version, data source
+                snapshot, disclosure version, and review timestamp.
+              </p>
+            </article>
+
+            <article>
+              <h3>Performance presentation</h3>
+              <p>
+                CAGR, drawdown, volatility, benchmark comparison, trade count, and fee/slippage
+                assumptions are shown together. APY and return leaderboards are intentionally absent.
+              </p>
+            </article>
+
+            <article>
+              <h3>Backtest constraints</h3>
+              <p>
+                Users can switch approved timeframes, benchmarks, and gross versus estimated net
+                display. They cannot tune strategy thresholds or search every ETF.
+              </p>
+            </article>
+
+            <article>
+              <h3>Launch gates</h3>
+              <p>
+                Paid signals stay deferred until legal posture, data rights, disclosure templates,
+                conflicts policy, and methodology review are complete.
+              </p>
+            </article>
+          </div>
+
+          <section class="disclosure-panel">
+            <p class="eyebrow">Required language</p>
+            <h3>Research-only disclosure pattern</h3>
+            <p>
+              Historical or hypothetical performance is not a guarantee of future results. Research
+              events are educational artifacts and are not personalized investment advice. Data may
+              be delayed, revised, or incomplete. Trading involves risk, including loss of principal.
+            </p>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="data-risk-view" data-view="data-risk" aria-labelledby="data-risk-heading">
+        <div class="content-page">
+          <div class="page-intro">
+            <p class="eyebrow">Disclosures and controls</p>
+            <h2 id="data-risk-heading">Data, assumptions, risk, and conflicts stay visible.</h2>
+            <p>
+              Strategy Ledger treats source quality, methodology limits, and conflict review as
+              product surfaces. These controls are shown before any future subscription work.
+            </p>
+          </div>
+
+          <div class="risk-grid">
+            <article>
+              <h3>Data sources</h3>
+              <p>
+                MVP research runs use versioned adjusted historical ETF prices and fixed universe
+                snapshots. Redistribution rights, vendor terms, and revision handling must be approved
+                before launch.
+              </p>
+            </article>
+
+            <article>
+              <h3>Performance assumptions</h3>
+              <p>
+                Backtests are precomputed with documented sample windows, execution timing, benchmark,
+                transaction-cost, and slippage assumptions. Estimated net results are illustrative.
+              </p>
+            </article>
+
+            <article>
+              <h3>Risk language</h3>
+              <p>
+                Trading ETFs can lose money, including principal. Historical and hypothetical results
+                do not predict future returns, and drawdowns may exceed modeled results.
+              </p>
+            </article>
+
+            <article>
+              <h3>Conflicts</h3>
+              <p>
+                Founder, affiliate, or employee trading in covered ETFs requires policy review,
+                disclosure, and incident handling before any paid product gate opens.
+              </p>
+            </article>
+          </div>
+
+          <section class="data-ledger" aria-labelledby="ledger-heading">
+            <div>
+              <p class="eyebrow">Artifact ledger</p>
+              <h3 id="ledger-heading">Every performance page must carry these references</h3>
+            </div>
+            <ul class="plain-list two-column">
+              <li>Strategy rule version</li>
+              <li>Backtest engine version</li>
+              <li>Data source snapshot</li>
+              <li>Assumptions version</li>
+              <li>Disclosure version</li>
+              <li>Reviewer and approval timestamp</li>
+            </ul>
+          </section>
+
+          <section class="disclosure-panel">
+            <p class="eyebrow">Internal workflow prototype</p>
+            <h3>Review queue is not a public product surface.</h3>
+            <p>
+              The queue below is included to test the MVP approval workflow only. A production
+              version requires authentication, role permissions, server-side persistence, reviewer
+              identity, and immutable approval timestamps.
+            </p>
+            <button class="secondary-action" type="button" data-view-button="review" aria-controls="review-view">
+              Open internal review prototype
+            </button>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="review-view" data-view="review" aria-labelledby="review-heading">
+        <div class="content-page">
+          <div class="page-intro">
+            <p class="eyebrow">Internal admin</p>
+            <h2 id="review-heading">Research publication queue</h2>
+            <p>
+              Internal prototype only. This demonstrates the content approval workflow; production
+              requires authentication, server-side audit logs, reviewer identity, and approval
+              timestamps before anything can be published.
+            </p>
+          </div>
+
+          <div class="queue-toolbar" aria-label="Review queue filters">
+            <button class="secondary-action is-active" type="button" data-queue-filter="all">
+              All
+            </button>
+            <button class="secondary-action" type="button" data-queue-filter="draft">
+              Draft
+            </button>
+            <button class="secondary-action" type="button" data-queue-filter="quant">
+              Quant review
+            </button>
+            <button class="secondary-action" type="button" data-queue-filter="compliance">
+              Compliance
+            </button>
+            <button class="secondary-action" type="button" data-queue-filter="published">
+              Published
+            </button>
+          </div>
+
+          <div class="review-table" id="reviewTable" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+
+    <dialog class="waitlist-modal" id="waitlistModal" aria-labelledby="waitlistTitle" aria-describedby="waitlistDescription waitlistDisclosure">
+      <form method="dialog" class="modal-card" id="waitlistForm">
+        <button class="icon-button close-button" value="cancel" type="button" aria-label="Close waitlist">
+          <span aria-hidden="true">x</span>
+        </button>
+        <p class="eyebrow">Research access</p>
+        <h2 id="waitlistTitle">Join the validation waitlist</h2>
+        <p id="waitlistDescription">
+          Share interest in full research access. This prototype does not sell live signals.
+        </p>
+
+        <label>
+          <span>Email</span>
+          <input id="emailInput" name="email" type="email" placeholder="you@example.com" autocomplete="email" required />
+        </label>
+
+        <label>
+          <span>What would you value most?</span>
+          <select id="interestInput" name="interest">
+            <option value="reports">Full ETF research reports</option>
+            <option value="methodology">Methodology and backtest transparency</option>
+            <option value="updates">Research update emails</option>
+            <option value="future-signals">Future compliant research updates</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Pricing comfort</span>
+          <select id="priceInput" name="price">
+            <option value="research-free">Free research access</option>
+            <option value="research-15">$15/month for full reports</option>
+            <option value="research-49">$49/month for deeper research</option>
+            <option value="not-sure">Not sure yet</option>
+          </select>
+        </label>
+
+        <p class="form-disclosure" id="waitlistDisclosure">
+          Saved locally in this browser for MVP validation. No account, payment, trading signal,
+          or advisory relationship is created.
+        </p>
+        <button class="primary-action wide" type="submit">Save interest</button>
+        <p class="form-message" id="formMessage" role="status"></p>
+      </form>
+    </dialog>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
