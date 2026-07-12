@@ -26,25 +26,29 @@ const RANGE_TO_DAYS: Record<string, number> = {
   "3y": 370 * 3,
   "5y": 370 * 5,
   "10y": 370 * 10,
-  max: 370 * 30,
 };
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const symbol = sanitizeSymbol(url.searchParams.get("symbol"));
-  const range = url.searchParams.get("range") ?? "5y";
+  const range = url.searchParams.get("range") ?? "max";
   if (!symbol) {
     return Response.json({ error: "Missing ETF symbol" }, { status: 400 });
   }
 
-  const days = RANGE_TO_DAYS[range] ?? RANGE_TO_DAYS["5y"];
   const fetchedAt = new Date();
   const asOfDate = fetchedAt.toISOString().slice(0, 10);
   const period2 = Math.floor(Date.parse(`${asOfDate}T23:59:59.000Z`) / 1000);
-  const period1 = period2 - days * 24 * 60 * 60;
   const yahooUrl = new URL(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`);
-  yahooUrl.searchParams.set("period1", String(period1));
-  yahooUrl.searchParams.set("period2", String(period2));
+  if (range === "max" || range === "inception") {
+    yahooUrl.searchParams.set("period1", "0");
+    yahooUrl.searchParams.set("period2", String(period2));
+  } else {
+    const days = RANGE_TO_DAYS[range] ?? RANGE_TO_DAYS["5y"];
+    const period1 = period2 - days * 24 * 60 * 60;
+    yahooUrl.searchParams.set("period1", String(period1));
+    yahooUrl.searchParams.set("period2", String(period2));
+  }
   yahooUrl.searchParams.set("interval", "1d");
   yahooUrl.searchParams.set("events", "history");
   yahooUrl.searchParams.set("includeAdjustedClose", "true");

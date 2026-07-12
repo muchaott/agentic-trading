@@ -13,15 +13,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Strategy 2 ETF Mean Reversion Backtester",
-  description: "Live ETF Bollinger Band and RSI mean-reversion backtesting dashboard.",
+  title: "ETF Inception Backtester",
+  description: "Live ETF Bollinger Band and RSI mean-reversion backtests from each ETF's first available daily price.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "Strategy 2 ETF Mean Reversion Backtester",
-    description: "Live ETF Bollinger Band and RSI mean-reversion backtesting dashboard.",
+    title: "ETF Inception Backtester",
+    description: "Live ETF Bollinger Band and RSI mean-reversion backtests from each ETF's first available daily price.",
     type: "website",
   },
 };

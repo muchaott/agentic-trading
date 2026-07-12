@@ -28,6 +28,10 @@ type BacktestPoint = {
 
 type BacktestResult = {
   points: BacktestPoint[];
+  startDate: string | null;
+  endDate: string | null;
+  tradingDays: number;
+  testedYears: number;
   finalEquity: number;
   cagr: number;
   sharpe: number;
@@ -67,11 +71,11 @@ type CachedRun = {
 type MetricTone = Signal | StrategySynthesis["tone"];
 
 const PERIOD_OPTIONS = [
+  { label: "Since inception", value: "max" },
   { label: "1Y", value: "1y" },
   { label: "3Y", value: "3y" },
   { label: "5Y", value: "5y" },
   { label: "10Y", value: "10y" },
-  { label: "Max", value: "max" },
 ];
 
 const DEFAULT_SETTINGS = {
@@ -88,16 +92,16 @@ export default function Home() {
   const [universe, setUniverse] = useState<EtfProfile[]>(ETF_UNIVERSE);
   const [query, setQuery] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState(ETF_UNIVERSE[0].symbol);
-  const [period, setPeriod] = useState("5y");
+  const [period, setPeriod] = useState("max");
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [bars, setBars] = useState<Bar[]>([]);
   const [status, setStatus] = useState("Ready");
-  const [batchStatus, setBatchStatus] = useState("No comparison batch run yet");
+  const [batchStatus, setBatchStatus] = useState("No inception batch run yet");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [comparisonRuns, setComparisonRuns] = useState<Record<string, CachedRun>>({});
   const [isAnalyzingUniverse, setIsAnalyzingUniverse] = useState(false);
-  const [comparisonLimit, setComparisonLimit] = useState(18);
+  const [comparisonLimit, setComparisonLimit] = useState(72);
 
   const eligibleUniverse = useMemo(
     () => universe.filter((etf) => etf.stockCount > 10),
@@ -125,6 +129,10 @@ export default function Home() {
     () => synthesizeStrategy(result),
     [result],
   );
+  const selectedRunLabel = useMemo(
+    () => runWindowLabel(result),
+    [result],
+  );
   const rankedUniverse = useMemo(() => {
     return [...filteredUniverse].sort((left, right) => {
       const leftRun = comparisonRuns[left.symbol];
@@ -145,7 +153,7 @@ export default function Home() {
     const cached = comparisonRuns[selectedEtf.symbol];
     if (cached?.bars?.length && cached.range === period) {
       setBars(cached.bars);
-      setStatus(`${selectedEtf.symbol} loaded from cache through ${cached.updatedThrough ?? "latest close"}`);
+      setStatus(`${selectedEtf.symbol} loaded from cache ${rangeCopy(period)} through ${cached.updatedThrough ?? "latest close"}`);
       return;
     }
     const controller = new AbortController();
@@ -188,7 +196,9 @@ export default function Home() {
       }
       setBars(payload.bars);
       cacheRun(symbol, payload.bars, range);
-      setStatus(`${symbol} updated through ${payload.bars.at(-1)?.date ?? "latest close"}`);
+      const firstDate = payload.bars.at(0)?.date ?? "first available close";
+      const lastDate = payload.bars.at(-1)?.date ?? "latest close";
+      setStatus(`${symbol} tested ${rangeCopy(range)} from ${firstDate} through ${lastDate}`);
     } catch (caught) {
       if (caught instanceof DOMException && caught.name === "AbortError") return;
       setBars([]);
@@ -224,7 +234,7 @@ export default function Home() {
 
   async function analyzeVisibleUniverse() {
     setIsAnalyzingUniverse(true);
-    setBatchStatus(`Analyzing ${Math.min(comparisonLimit, filteredUniverse.length)} ETF strategies`);
+    setBatchStatus(`Backtesting ${Math.min(comparisonLimit, filteredUniverse.length)} ETF strategies ${rangeCopy(period)}`);
     const symbols = filteredUniverse.slice(0, comparisonLimit).map((etf) => etf.symbol);
     for (const symbol of symbols) {
       const existing = comparisonRuns[symbol];
@@ -232,7 +242,7 @@ export default function Home() {
       await analyzeOneEtf(symbol);
     }
     setIsAnalyzingUniverse(false);
-    setBatchStatus(`Analyzed ${symbols.length} ETF strategies for ${period.toUpperCase()}`);
+    setBatchStatus(`Backtested ${symbols.length} ETF strategies ${rangeCopy(period)}`);
   }
 
   function selectAnalyzedEtf(symbol: string) {
@@ -240,7 +250,7 @@ export default function Home() {
     const cached = comparisonRuns[symbol];
     if (cached?.bars?.length && cached.range === period) {
       setBars(cached.bars);
-      setStatus(`${symbol} loaded from analyzed comparison ${cached.updatedThrough ? `through ${cached.updatedThrough}` : ""}`.trim());
+      setStatus(`${symbol} loaded from analyzed comparison ${rangeCopy(period)} ${cached.updatedThrough ? `through ${cached.updatedThrough}` : ""}`.trim());
     }
   }
 
@@ -319,11 +329,11 @@ export default function Home() {
             <div>
               <p className="text-sm font-semibold uppercase text-[#7b4a23]">Agentic Trading</p>
               <h1 className="mt-1 text-3xl font-semibold text-[#182326] sm:text-4xl">
-                Strategy 2: ETF BB/RSI Mean Reversion
+                Strategy 2: ETF Inception Backtester
               </h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-[#586064]">
-                Bullish: daily low touches the lower Bollinger Band and RSI is below 30.
-                Bearish: daily high touches the upper band and RSI is above 70.
+                Each eligible ETF is tested from its first available daily price by default.
+                The rules enter after lower-band/oversold signals and step aside after upper-band/overbought signals.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -347,10 +357,11 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-5">
             <Metric label="ETF strategies" value={String(eligibleUniverse.length)} />
+            <Metric label="Test window" value={selectedRunLabel} />
             <Metric label="Latest signal" value={signalLabel(result.latestSignal?.signal)} tone={result.latestSignal?.signal} />
-            <Metric label="Strategy score" value={`${selectedSynthesis.score}/100`} tone={selectedSynthesis.tone} />
+            <Metric label="Fit score" value={`${selectedSynthesis.score}/100`} tone={selectedSynthesis.tone} />
             <Metric label="Verdict" value={selectedSynthesis.grade} tone={selectedSynthesis.tone} />
           </div>
         </div>
@@ -412,10 +423,11 @@ export default function Home() {
                 <p className="mt-1 text-sm text-[#667074]">{selectedEtf?.stockCount} stocks in holdings metadata · {status}</p>
                 {error ? <p className="mt-2 text-sm font-medium text-[#a33b28]">{error}</p> : null}
               </div>
-              <div className="grid gap-3 sm:grid-cols-3 xl:w-[520px]">
-                <Metric label="CAGR" value={percent(result.cagr)} />
-                <Metric label="Sharpe" value={number(result.sharpe)} />
-                <Metric label="Vs buy & hold" value={percent(result.alphaVsBuyHold)} />
+              <div className="grid gap-3 sm:grid-cols-2 xl:w-[620px] xl:grid-cols-4">
+                <Metric label={period === "max" ? "CAGR since inception" : "CAGR"} value={percent(result.cagr)} />
+                <Metric label="First price date" value={result.startDate ?? "—"} />
+                <Metric label="Years tested" value={result.testedYears ? result.testedYears.toFixed(1) : "—"} />
+                <Metric label="CAGR vs hold" value={percent(result.cagr - result.buyHoldCagr)} />
               </div>
             </div>
 
@@ -463,12 +475,12 @@ export default function Home() {
               <div>
                 <h3 className="text-lg font-semibold">ETF Strategy Scoreboard</h3>
                 <p className="mt-1 text-sm text-[#667074]">
-                  {analyzedCount} of {filteredUniverse.length} visible ETFs analyzed · {batchStatus}
+                  {analyzedCount} of {filteredUniverse.length} visible ETFs backtested · {batchStatus}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <label className="compact-label">
-                  Analyze first
+                  Backtest first
                   <select
                     className="compact-select"
                     value={comparisonLimit}
@@ -486,7 +498,7 @@ export default function Home() {
                   onClick={analyzeVisibleUniverse}
                   type="button"
                 >
-                  {isAnalyzingUniverse ? "Analyzing" : "Analyze visible ETFs"}
+                  {isAnalyzingUniverse ? "Backtesting" : period === "max" ? "Backtest since inception" : `Backtest ${period.toUpperCase()}`}
                 </button>
               </div>
             </div>
@@ -537,6 +549,7 @@ export default function Home() {
             </div>
             <div className="panel space-y-3">
               <h3 className="text-lg font-semibold">Run Notes</h3>
+              <RunNote label="Backtest window" value={`${selectedRunLabel}; ${period === "max" ? "Yahoo max history is requested so each ETF starts at its first available adjusted daily bar." : "Use Since inception to test the full available history for each ETF."}`} />
               <RunNote label="Signal timing" value="Indicators use completed daily candles; allocation changes on the next close." />
               <RunNote label="Touch rule" value="Upper band uses high >= upper band; lower band uses low <= lower band." />
               <RunNote label="Exposure" value={`${percent(result.exposure)} in active long or short exposure.`} />
@@ -601,12 +614,20 @@ function ScoreboardRow({
         <span>CAGR</span>
       </div>
       <div className="score-cell">
-        <b>{result ? percent(result.maxDrawdown) : "—"}</b>
-        <span>Max DD</span>
+        <b>{result?.startDate ?? "—"}</b>
+        <span>Start</span>
       </div>
       <div className="score-cell">
-        <b>{result ? percent(result.alphaVsBuyHold) : "—"}</b>
-        <span>Vs hold</span>
+        <b>{result?.testedYears ? result.testedYears.toFixed(1) : "—"}</b>
+        <span>Years</span>
+      </div>
+      <div className="score-cell">
+        <b>{result ? percent(result.buyHoldCagr) : "—"}</b>
+        <span>Hold CAGR</span>
+      </div>
+      <div className="score-cell">
+        <b>{result ? percent(result.maxDrawdown) : "—"}</b>
+        <span>Worst drop</span>
       </div>
       <div className="score-cell">
         <b>{result ? signalLabel(result.latestSignal?.signal) : "—"}</b>
@@ -761,6 +782,9 @@ function runBacktest(bars: Bar[], settings: typeof DEFAULT_SETTINGS): BacktestRe
     return emptyResult(settings.initialCash);
   }
 
+  const startDate = bars[0]?.date ?? null;
+  const endDate = bars.at(-1)?.date ?? null;
+  const testedYears = calendarYearsBetween(startDate, endDate) || (bars.length - 1) / 252;
   const closes = bars.map((bar) => bar.close);
   const bands = bollingerBands(closes, settings.bbPeriod, settings.bbDeviations);
   const rsiValues = rsiWilder(closes, settings.rsiPeriod);
@@ -810,7 +834,7 @@ function runBacktest(bars: Bar[], settings: typeof DEFAULT_SETTINGS): BacktestRe
     }
   }
 
-  const years = returns.length / 252;
+  const years = testedYears || returns.length / 252;
   const cagr = years > 0 ? (equity / settings.initialCash) ** (1 / years) - 1 : 0;
   const signalPoints = points.filter((point) => point.signal === "bullish" || point.signal === "bearish");
   const buyHoldReturn = (bars.at(-1)?.close ?? 0) / (bars[0]?.close ?? 1) - 1;
@@ -820,6 +844,10 @@ function runBacktest(bars: Bar[], settings: typeof DEFAULT_SETTINGS): BacktestRe
 
   return {
     points,
+    startDate,
+    endDate,
+    tradingDays: returns.length,
+    testedYears,
     finalEquity: equity,
     cagr,
     sharpe: annualizedSharpe(returns),
@@ -839,6 +867,10 @@ function runBacktest(bars: Bar[], settings: typeof DEFAULT_SETTINGS): BacktestRe
 function emptyResult(initialCash: number): BacktestResult {
   return {
     points: [],
+    startDate: null,
+    endDate: null,
+    tradingDays: 0,
+    testedYears: 0,
     finalEquity: initialCash,
     cagr: 0,
     sharpe: 0,
@@ -924,10 +956,10 @@ function synthesizeStrategy(result: BacktestResult): StrategySynthesis {
     grade,
     tone,
     verdict,
-    edge: `${percent(result.cagr)} annualized vs ${percent(result.buyHoldCagr)} buy-and-hold; ${percent(result.alphaVsBuyHold)} total return difference.`,
+    edge: `${percent(result.cagr)} CAGR vs ${percent(result.buyHoldCagr)} buy-and-hold CAGR; ${percent(result.cagr - result.buyHoldCagr)} annualized difference.`,
     risk: `${percent(result.maxDrawdown)} strategy max drawdown vs ${percent(result.buyHoldMaxDrawdown)} buy-and-hold; Sharpe ${number(result.sharpe)}.`,
-    activity: `${tradesPerYear.toFixed(1)} trades/year, ${result.signalCount} signals, ${percent(result.exposure)} exposure; latest signal is ${latestSignal}.`,
-    driver: `Edge ${percent(result.cagr - result.buyHoldCagr)} / Risk ${percent(result.maxDrawdown)} / ${tradesPerYear.toFixed(1)} trades-yr`,
+    activity: `${result.testedYears.toFixed(1)} tested years, ${tradesPerYear.toFixed(1)} trades/year, ${result.signalCount} signals, ${percent(result.exposure)} exposure; latest signal is ${latestSignal}.`,
+    driver: `${result.startDate ?? "Start"} · CAGR ${percent(result.cagr)} vs hold ${percent(result.buyHoldCagr)} · Worst drop ${percent(result.maxDrawdown)}`,
   };
 }
 
@@ -1049,6 +1081,24 @@ function currentSignalScoreFor(latestSignal: BacktestPoint | null, latestDate?: 
   if (!Number.isFinite(latestTime) || !Number.isFinite(signalTime)) return 0.6;
   const daysOld = (latestTime - signalTime) / (24 * 60 * 60 * 1000);
   return daysOld <= 14 ? 1 : daysOld <= 45 ? 0.6 : 0.35;
+}
+
+function calendarYearsBetween(startDate: string | null, endDate: string | null) {
+  if (!startDate || !endDate) return 0;
+  const start = Date.parse(`${startDate}T00:00:00.000Z`);
+  const end = Date.parse(`${endDate}T00:00:00.000Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
+  return (end - start) / (365.25 * 24 * 60 * 60 * 1000);
+}
+
+function rangeCopy(range: string) {
+  if (range === "max" || range === "inception") return "since inception";
+  return `over ${range.toUpperCase()}`;
+}
+
+function runWindowLabel(result: BacktestResult) {
+  if (!result.startDate || !result.endDate || !result.testedYears) return "Not loaded";
+  return `${result.testedYears.toFixed(1)} yrs · ${result.startDate} to ${result.endDate}`;
 }
 
 function scale(value: number, min: number, max: number, outputMax: number, outputMin: number) {

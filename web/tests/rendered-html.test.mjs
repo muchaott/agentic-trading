@@ -29,8 +29,9 @@ test("server-renders the ETF strategy dashboard", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>Strategy 2 ETF Mean Reversion Backtester<\/title>/i);
-  assert.match(html, /Strategy 2: ETF BB\/RSI Mean Reversion/);
+  assert.match(html, /<title>ETF Inception Backtester<\/title>/i);
+  assert.match(html, /Strategy 2: ETF Inception Backtester/);
+  assert.match(html, /Since inception/);
   assert.match(html, /ETF universe/);
   assert.match(html, /Signal Log/);
   assert.match(html, /Run Notes/);
@@ -47,7 +48,7 @@ test("keeps the finished app free of starter preview wiring", async () => {
 
   assert.match(page, /runBacktest/);
   assert.match(page, /classifySignal/);
-  assert.match(layout, /Strategy 2 ETF Mean Reversion Backtester/);
+  assert.match(layout, /ETF Inception Backtester/);
   assert.doesNotMatch(page, /_sites-preview|SkeletonPreview|codex-preview/i);
   assert.doesNotMatch(layout, /Starter Project|codex-preview|_sites-preview/i);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);

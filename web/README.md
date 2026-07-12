@@ -2,14 +2,16 @@
 
 Live website for Strategy 2: ETF Bollinger/RSI Mean Reversion.
 
-The app lets a user select or import ETFs, fetch daily OHLC history, run the
-Strategy 2 backtest, review a single ETF's signal history, and compare visible
-ETFs in a strategy scoreboard.
+The app lets a user select or import ETFs, fetch daily OHLC history from each
+ETF's first available daily price by default, run the Strategy 2 backtest,
+review a single ETF's signal history, and compare visible ETFs in a strategy
+scoreboard.
 
 ## Current MVP Scope
 
 - Client-side Strategy 2 backtests.
-- `/api/history` proxy for daily Yahoo chart data.
+- `/api/history` proxy for daily Yahoo chart data, using `period1=0` daily bars
+  for since-inception runs.
 - Seeded ETF universe in `app/data/etfs.ts`.
 - Custom ETF add and CSV import.
 - Strategy synthesis score and comparison scoreboard.
