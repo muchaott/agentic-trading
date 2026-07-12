@@ -21,6 +21,26 @@ Decision tree, first match wins:
 Backtests compute signals from completed closes and apply the allocation on the
 next trading day. This is intentionally conservative to avoid look-ahead bias.
 
+## ETF Bollinger/RSI Mean Reversion
+
+Strategy 2 applies the same completed-candle timing discipline to each eligible
+ETF independently. Eligible ETFs are equity ETFs with more than 10 stock
+holdings.
+
+Default signal rules:
+
+1. Bullish: daily low touches the Bollinger Band lower band and RSI is below 30.
+2. Bearish: daily high touches the Bollinger Band upper band and RSI is above 70.
+
+The website in `web/` provides a live backtesting dashboard for the seeded ETF
+universe, custom ETF additions, and CSV universe imports.
+
+Technical foundation note: Strategy 2 is currently an MVP research prototype.
+Before treating its scores as durable research records, complete the foundation
+work in `docs/technical_foundation_vendor_plan.md`: explicitly lock execution
+timing, add canonical OHLCV validation, add Python/web parity fixtures, and move
+live data behind a licensed provider abstraction.
+
 ## Quick Start
 
 ```bash
@@ -59,8 +79,15 @@ date,symbol,close
 ## Project Shape
 
 - `strategies/tqqq_regime_switch.yaml` documents the strategy contract.
+- `strategies/etf_bollinger_rsi_mean_reversion.yaml` documents Strategy 2.
 - `src/agentic_trading/strategies/tqqq_regime_switch.py` implements the rule tree.
+- `src/agentic_trading/strategies/etf_bollinger_rsi_mean_reversion.py` implements
+  the ETF Bollinger/RSI strategy.
 - `src/agentic_trading/backtest.py` runs deterministic next-day allocation tests.
+- `web/` contains the live backtesting website.
+- `docs/technical_foundation_vendor_plan.md` documents the engineering/PM review,
+  vendor recommendations, target architecture, and release plan for making the
+  MVP production-sound.
 - `reports/tqqq_strategy_1/` contains the saved Strategy 1 report, chart, trade log, summary, and price data.
 - `scripts/` contains one-off report/chart generators for the saved Strategy 1 package.
 - `state/signals/` is for generated daily signal artifacts.

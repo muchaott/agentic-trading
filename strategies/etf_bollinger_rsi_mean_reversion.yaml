@@ -1,0 +1,35 @@
+id: strategy_2_etf_bollinger_rsi_mean_reversion
+name: ETF Bollinger/RSI Mean Reversion
+strategy_number: 2
+universe:
+  include: US-listed equity ETFs with more than 10 stock holdings
+  unit: Each ETF is treated as one independent strategy instance
+data:
+  timeframe: 1D
+  fields:
+    - open
+    - high
+    - low
+    - close
+signals:
+  bullish:
+    all:
+      - daily low touches or crosses below the Bollinger Band lower band
+      - RSI is below 30
+  bearish:
+    all:
+      - daily high touches or crosses above the Bollinger Band upper band
+      - RSI is above 70
+defaults:
+  bollinger_period: 20
+  bollinger_standard_deviations: 2
+  rsi_period: 14
+  execution_timing: next trading day after completed candle
+  default_position_mode: long_cash
+website:
+  path: web/
+  behavior: Live backtesting tool with one strategy instance per eligible ETF
+guardrails:
+  - Research tooling only
+  - Does not place trades or connect to brokerage accounts
+  - Holding counts should be refreshed from an authoritative ETF universe source before production use

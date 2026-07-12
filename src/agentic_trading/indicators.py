@@ -21,6 +21,31 @@ def sma(values: Sequence[float], period: int) -> list[float | None]:
     return result
 
 
+def bollinger_bands(
+    values: Sequence[float],
+    period: int = 20,
+    deviations: float = 2.0,
+) -> list[tuple[float, float, float] | None]:
+    """Return lower, middle, upper Bollinger Bands aligned to the input sequence."""
+    if period <= 0:
+        raise ValueError("period must be positive")
+    if deviations <= 0:
+        raise ValueError("deviations must be positive")
+
+    result: list[tuple[float, float, float] | None] = [None] * len(values)
+    for index in range(period - 1, len(values)):
+        window = [float(value) for value in values[index - period + 1 : index + 1]]
+        middle = sum(window) / period
+        variance = sum((value - middle) ** 2 for value in window) / period
+        stdev = variance**0.5
+        result[index] = (
+            middle - (deviations * stdev),
+            middle,
+            middle + (deviations * stdev),
+        )
+    return result
+
+
 def rsi_wilder(values: Sequence[float], period: int) -> list[float | None]:
     """Return Wilder RSI values aligned to the input sequence."""
     if period <= 0:
