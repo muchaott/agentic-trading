@@ -30,7 +30,9 @@ test("server-renders the ETF strategy dashboard", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>ABC Strategy Lab<\/title>/i);
-  assert.match(html, /Live inception backtests for the three candidate strategies/);
+  assert.match(html, /saved TQQQ Strategy 1 is now part of the live lab/i);
+  assert.match(html, /Strategy 1/);
+  assert.match(html, /TQQQ Strategy 1 - Regime Switch/);
   assert.match(html, /Candidate A/);
   assert.match(html, /Candidate B/);
   assert.match(html, /Candidate C/);
@@ -47,9 +49,11 @@ test("keeps the finished app free of starter preview wiring", async () => {
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
 
+  assert.match(page, /runTqqqStrategy1/);
   assert.match(page, /runCandidateA/);
   assert.match(page, /runCandidateB/);
   assert.match(page, /runCandidateC/);
+  assert.match(page, /Saved package snapshot: 2016-07-08 to 2026-07-07/);
   assert.match(page, /analyzeEntryTiming/);
   assert.match(page, /InteractiveBacktestChart/);
   assert.match(page, /chartRange/);

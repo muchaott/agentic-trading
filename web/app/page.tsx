@@ -12,7 +12,7 @@ type Bar = {
 };
 
 type SymbolKey = "SPY" | "QQQ" | "TQQQ" | "BIL" | "SMH" | "SOXL";
-type StrategyId = "A" | "B" | "C";
+type StrategyId = "S1" | "A" | "B" | "C";
 type Position = "BIL" | "TQQQ" | "SOXL" | "CASH";
 type ChartView = "equity" | "drawdown" | "cohort";
 type ChartRange = "all" | "10y" | "5y" | "3y" | "1y";
@@ -125,8 +125,33 @@ const RANGE_TO_TRADING_DAYS: Record<Exclude<ChartRange, "all">, number> = {
   "3y": 756,
   "1y": 252,
 };
+const STRATEGY_ORDER: StrategyId[] = ["S1", "A", "B", "C"];
 
 const STRATEGY_COPY: Record<StrategyId, Omit<StrategyRun, "points" | "stats" | "currentAllocation" | "latestReason" | "trades" | "entryStress">> = {
+  S1: {
+    id: "S1",
+    title: "TQQQ Strategy 1 - Regime Switch",
+    label: "Strategy 1",
+    subtitle: "Imported TQQQ/BIL regime switch from the saved research package",
+    plainEnglish:
+      "Use SPY as the market regime filter. Own TQQQ when the broad-market trend is constructive, and rotate to BIL during warmup periods, failed long-term trend, or weak tape.",
+    riskProfile: "Aggressive leveraged Nasdaq exposure with Treasury-bill risk-off sleeve",
+    symbols: ["SPY", "TQQQ", "BIL"],
+    rules: [
+      "Hold BIL while the 200-day trend history warms up.",
+      "Hold BIL when SPY closes below its 200-day moving average.",
+      "Own TQQQ when SPY closes above its 200-day average and the SPY 10-day average is above the 200-day average.",
+      "Own TQQQ in a weaker but still constructive tape when SPY closes above its 20-day average.",
+      "Otherwise hold BIL until the broad-market setup improves.",
+    ],
+    exits: [
+      "Exit TQQQ to BIL when SPY falls below its 200-day moving average.",
+      "Exit TQQQ to BIL when SPY no longer clears either the confirmed trend or weak-uptrend gate.",
+      "Switches are applied after completed daily closes to the next close-to-close return.",
+    ],
+    caveat:
+      "Saved package snapshot: 2016-07-08 to 2026-07-07, $100,000 to $1,530,846, 31.50% CAGR, 0.82 Sharpe, -58.41% max drawdown, and 52 trade periods before friction, taxes, or slippage. The live tool recomputes from available full-history data, so the current numbers can differ.",
+  },
   A: {
     id: "A",
     title: "TQQQ Nasdaq Regime Cooldown",
@@ -210,7 +235,7 @@ const STRATEGY_COPY: Record<StrategyId, Omit<StrategyRun, "points" | "stats" | "
 
 export default function Home() {
   const [histories, setHistories] = useState<HistoryMap>({});
-  const [selectedId, setSelectedId] = useState<StrategyId>("A");
+  const [selectedId, setSelectedId] = useState<StrategyId>("S1");
   const [status, setStatus] = useState("Loading full-history market data");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -301,9 +326,9 @@ export default function Home() {
           <span className="eyebrow">ABC Strategy Lab</span>
           <h1>Live inception backtests for the three candidate strategies.</h1>
           <p>
-            The previous ETF-wide Bollinger/RSI screen is archived below. This page now
-            focuses on A/B/C with explicit allocation rules, exits, and bad-timing stress
-            tests that show what happened to investors who started near historical peaks.
+            The saved TQQQ Strategy 1 is now part of the live lab beside A/B/C. Each
+            strategy has explicit allocation rules, exits, and bad-timing stress tests
+            that show what happened to investors who started near historical peaks.
           </p>
         </div>
         <div className="hero-actions">
@@ -351,12 +376,12 @@ export default function Home() {
       <section className="snapshot-grid" aria-label="Strategy highlights">
         <MetricCard label="Best CAGR" value={bestCagr ? `${bestCagr.label}: ${formatPercent(bestCagr.stats.cagr)}` : "Loading"} tone="positive" />
         <MetricCard label="Smallest drawdown" value={bestDrawdown ? `${bestDrawdown.label}: ${formatPercent(bestDrawdown.stats.maxDrawdown)}` : "Loading"} tone="calm" />
-        <MetricCard label="Strategies live" value={runs.length ? `${runs.length} of 3` : "Loading"} tone="neutral" />
-        <MetricCard label="Current focus" value={selectedRun?.label ?? "Candidate A"} tone="neutral" />
+        <MetricCard label="Strategies live" value={runs.length ? `${runs.length} of ${STRATEGY_ORDER.length}` : "Loading"} tone="neutral" />
+        <MetricCard label="Current focus" value={selectedRun?.label ?? "Strategy 1"} tone="neutral" />
       </section>
 
-      <section className="strategy-grid" aria-label="ABC strategy selector">
-        {(["A", "B", "C"] as StrategyId[]).map((id) => {
+      <section className="strategy-grid" aria-label="Strategy selector">
+        {STRATEGY_ORDER.map((id) => {
           const run = runs.find((candidate) => candidate.id === id);
           const copy = STRATEGY_COPY[id];
           return (
@@ -596,7 +621,7 @@ export default function Home() {
         <div className="section-head">
           <div>
             <span className="eyebrow">Glance table</span>
-            <h2>Compare A/B/C on the same assumptions</h2>
+            <h2>Compare Strategy 1 and A/B/C on the same assumptions</h2>
           </div>
           <p>Higher CAGR is useful only beside drawdown, exposure, and trade count.</p>
         </div>
@@ -661,8 +686,8 @@ export default function Home() {
           </article>
           <article>
             <strong>Archived baseline</strong>
-            <span>Original TQQQ regime strategy</span>
-            <p>High CAGR in some windows, but weaker risk control and larger drawdowns than the refined A/B/C candidates.</p>
+            <span>Earlier TQQQ research variants</span>
+            <p>Prior TQQQ regime experiments stay out of the main ranking unless their exact rule set is promoted into the live tool.</p>
           </article>
         </div>
       </section>
@@ -672,10 +697,106 @@ export default function Home() {
 
 function buildStrategyRuns(histories: CompleteHistoryMap, initialCash: number, costBps: number) {
   return [
+    runTqqqStrategy1(histories, initialCash, costBps),
     runCandidateA(histories, initialCash, costBps),
     runCandidateB(histories, initialCash, costBps),
     runCandidateC(histories, initialCash, costBps),
   ];
+}
+
+function runTqqqStrategy1(histories: CompleteHistoryMap, initialCash: number, costBps: number): StrategyRun {
+  const aligned = alignHistories(histories, ["SPY", "TQQQ", "BIL"]);
+  const spy = closes(aligned.barsBySymbol.SPY);
+  const tqqq = closes(aligned.barsBySymbol.TQQQ);
+  const bil = closes(aligned.barsBySymbol.BIL);
+  const spySma10 = sma(spy, 10);
+  const spySma20 = sma(spy, 20);
+  const spySma200 = sma(spy, 200);
+  const costRate = costBps / 10000;
+
+  let equity = initialCash;
+  let peak = initialCash;
+  let position: Position = "BIL";
+  let heldReason = "Indicator warmup";
+  let switches = 0;
+  let exposureDays = 0;
+  const points: StrategyPoint[] = [{
+    date: aligned.dates[0],
+    equity,
+    drawdown: 0,
+    position,
+    reason: heldReason,
+    exposure: false,
+  }];
+
+  for (let index = 1; index < aligned.dates.length; index += 1) {
+    const heldCloses = position === "TQQQ" ? tqqq : bil;
+    equity *= heldCloses[index] / heldCloses[index - 1];
+    if (position === "TQQQ") exposureDays += 1;
+    peak = Math.max(peak, equity);
+    points.push({
+      date: aligned.dates[index],
+      equity,
+      drawdown: equity / peak - 1,
+      position,
+      reason: heldReason,
+      exposure: position === "TQQQ",
+    });
+
+    const decision = decideTqqqStrategy1({
+      index,
+      spy,
+      spySma10,
+      spySma20,
+      spySma200,
+    });
+    if (decision.position !== position) {
+      if (index < aligned.dates.length - 1) {
+        equity *= 1 - costRate;
+        switches += 1;
+        peak = Math.max(peak, equity);
+        const currentPoint = points[points.length - 1];
+        currentPoint.equity = equity;
+        currentPoint.drawdown = equity / peak - 1;
+      }
+      position = decision.position;
+    }
+    heldReason = decision.reason;
+  }
+
+  return makeRun({
+    copy: STRATEGY_COPY.S1,
+    points,
+    trades: [],
+    tradeCount: switches,
+    exposureDays,
+    initialCash,
+    currentAllocation: position === "TQQQ" ? "TQQQ" : "BIL",
+    latestReason: heldReason,
+  });
+}
+
+function decideTqqqStrategy1(input: {
+  index: number;
+  spy: number[];
+  spySma10: Array<number | null>;
+  spySma20: Array<number | null>;
+  spySma200: Array<number | null>;
+}) {
+  const i = input.index;
+  if (input.spySma10[i] == null || input.spySma20[i] == null || input.spySma200[i] == null) {
+    return { position: "BIL" as Position, reason: "Indicator warmup" };
+  }
+  if (input.spy[i] < input.spySma200[i]!) {
+    return { position: "BIL" as Position, reason: "SPY is below its 200-day trend gate" };
+  }
+  if (input.spySma10[i]! > input.spySma200[i]!) {
+    return { position: "TQQQ" as Position, reason: "SPY long-term trend and 10-day confirmation are positive" };
+  }
+  if (input.spy[i] > input.spySma20[i]!) {
+    return { position: "TQQQ" as Position, reason: "SPY remains above its 20-day weak-uptrend gate" };
+  }
+  return { position: "BIL" as Position, reason: "No TQQQ regime confirmation" };
 }
 
 function runCandidateA(histories: CompleteHistoryMap, initialCash: number, costBps: number): StrategyRun {
