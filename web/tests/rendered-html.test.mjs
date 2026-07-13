@@ -34,6 +34,7 @@ test("server-renders the ETF strategy dashboard", async () => {
   assert.match(html, /Candidate A/);
   assert.match(html, /Candidate B/);
   assert.match(html, /Candidate C/);
+  assert.match(html, /bad-timing stress/);
   assert.match(html, /Archived Strategy 2/);
   assert.match(html, /Current allocation/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
@@ -49,6 +50,8 @@ test("keeps the finished app free of starter preview wiring", async () => {
   assert.match(page, /runCandidateA/);
   assert.match(page, /runCandidateB/);
   assert.match(page, /runCandidateC/);
+  assert.match(page, /analyzeEntryTiming/);
+  assert.match(page, /Bad Timing Stress Test/);
   assert.match(layout, /ABC Strategy Lab/);
   assert.doesNotMatch(page, /_sites-preview|SkeletonPreview|codex-preview/i);
   assert.doesNotMatch(layout, /Starter Project|codex-preview|_sites-preview/i);

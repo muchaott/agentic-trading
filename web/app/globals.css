@@ -262,6 +262,11 @@ td small,
   background: #fff7e8;
 }
 
+.metric.danger {
+  border-color: rgba(184, 70, 55, 0.42);
+  background: #fff0ee;
+}
+
 .strategy-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -310,12 +315,13 @@ td small,
 
 .mini-metrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   border-top: 1px solid var(--border);
   padding-top: 12px;
 }
 
+.mini-metrics span,
 .mini-metrics b,
 .mini-metrics small {
   display: block;
@@ -374,6 +380,74 @@ td small,
   border-radius: 8px;
   background: #fbfcfc;
   padding: 14px;
+}
+
+.stress-panel {
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f7fbfa;
+  padding: 16px;
+}
+
+.section-head.compact {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 520px);
+}
+
+.stress-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(280px, 1.25fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.verdict-card {
+  display: grid;
+  min-width: 0;
+  min-height: 88px;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 14px;
+}
+
+.verdict-card span {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.verdict-card strong {
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.32;
+}
+
+.verdict-card small {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.verdict-card.positive {
+  border-color: rgba(36, 122, 79, 0.4);
+  background: #eef8f2;
+}
+
+.verdict-card.warning {
+  border-color: rgba(164, 99, 22, 0.38);
+  background: #fff7e8;
+}
+
+.verdict-card.danger {
+  border-color: rgba(184, 70, 55, 0.42);
+  background: #fff0ee;
+}
+
+.stress-table table {
+  min-width: 980px;
 }
 
 .chart-title {
@@ -477,7 +551,7 @@ td small,
 
 table {
   width: 100%;
-  min-width: 900px;
+  min-width: 1040px;
   border-collapse: collapse;
   background: var(--surface);
 }
@@ -567,7 +641,15 @@ tr:last-child td {
   }
 
   .metrics-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stress-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .verdict-card {
+    grid-column: 1 / -1;
   }
 
   .detail-grid {
@@ -592,8 +674,13 @@ tr:last-child td {
   .control-strip,
   .snapshot-grid,
   .strategy-grid,
-  .metrics-row {
+  .metrics-row,
+  .stress-summary {
     grid-template-columns: 1fr;
+  }
+
+  .mini-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .strategy-card {

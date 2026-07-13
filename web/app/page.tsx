@@ -49,6 +49,32 @@ type StrategyStats = {
   winRate: number | null;
 };
 
+type EntryCohort = {
+  startDate: string;
+  troughDate: string;
+  recoveryDate: string | null;
+  minLoss: number;
+  finalReturn: number;
+  cagr: number;
+  tradingDaysToTrough: number;
+  tradingDaysToRecovery: number | null;
+  calendarDaysToRecovery: number | null;
+  startIndex: number;
+};
+
+type EntryStressTest = {
+  cohorts: EntryCohort[];
+  worstByLoss: EntryCohort | null;
+  slowestRecovery: EntryCohort | null;
+  medianRecoveryDays: number | null;
+  p90RecoveryDays: number | null;
+  unrecoveredCount: number;
+  observedStartCount: number;
+  minFollowThroughDays: number;
+  verdict: string;
+  tone: "positive" | "warning" | "danger" | "neutral";
+};
+
 type StrategyRun = {
   id: StrategyId;
   title: string;
@@ -65,6 +91,7 @@ type StrategyRun = {
   currentAllocation: string;
   latestReason: string;
   trades: ClosedTrade[];
+  entryStress: EntryStressTest;
 };
 
 type HistoryMap = Partial<Record<SymbolKey, Bar[]>>;
@@ -73,8 +100,9 @@ type CompleteHistoryMap = Record<SymbolKey, Bar[]>;
 const REQUIRED_SYMBOLS: SymbolKey[] = ["SPY", "QQQ", "TQQQ", "BIL", "SMH", "SOXL"];
 const INITIAL_CASH = 100000;
 const DEFAULT_COST_BPS = 0;
+const MIN_ENTRY_FOLLOW_THROUGH_DAYS = 252;
 
-const STRATEGY_COPY: Record<StrategyId, Omit<StrategyRun, "points" | "stats" | "currentAllocation" | "latestReason" | "trades">> = {
+const STRATEGY_COPY: Record<StrategyId, Omit<StrategyRun, "points" | "stats" | "currentAllocation" | "latestReason" | "trades" | "entryStress">> = {
   A: {
     id: "A",
     title: "TQQQ Nasdaq Regime Cooldown",
@@ -239,8 +267,8 @@ export default function Home() {
           <h1>Live inception backtests for the three candidate strategies.</h1>
           <p>
             The previous ETF-wide Bollinger/RSI screen is archived below. This page now
-            focuses on A/B/C with explicit allocation rules, exits, and performance that
-            can be read at a glance.
+            focuses on A/B/C with explicit allocation rules, exits, and bad-timing stress
+            tests that show what happened to investors who started near historical peaks.
           </p>
         </div>
         <div className="hero-actions">
@@ -307,12 +335,22 @@ export default function Home() {
               <strong>{copy.title}</strong>
               <p>{copy.subtitle}</p>
               <div className="mini-metrics">
-                <b>{run ? formatPercent(run.stats.cagr) : "..."}</b>
-                <small>CAGR</small>
-                <b>{run ? formatPercent(run.stats.maxDrawdown) : "..."}</b>
-                <small>Max DD</small>
-                <b>{run ? formatPercent(run.stats.exposure) : "..."}</b>
-                <small>Exposure</small>
+                <span>
+                  <b>{run ? formatPercent(run.stats.cagr) : "..."}</b>
+                  <small>CAGR</small>
+                </span>
+                <span>
+                  <b>{run ? formatPercent(run.stats.maxDrawdown) : "..."}</b>
+                  <small>Max DD</small>
+                </span>
+                <span>
+                  <b>{run ? formatPercent(run.stats.exposure) : "..."}</b>
+                  <small>Exposure</small>
+                </span>
+                <span>
+                  <b>{run?.entryStress.worstByLoss ? formatPercent(run.entryStress.worstByLoss.minLoss) : "..."}</b>
+                  <small>Worst start</small>
+                </span>
               </div>
             </button>
           );
@@ -341,6 +379,16 @@ export default function Home() {
             <MetricCard label="Final equity" value={formatCurrency(selectedRun.stats.finalEquity)} tone="neutral" />
             <MetricCard label="Exposure" value={formatPercent(selectedRun.stats.exposure)} tone="neutral" />
             <MetricCard label={selectedRun.id === "C" ? "Closed trades" : "Allocation switches"} value={String(selectedRun.stats.trades)} tone="neutral" />
+            <MetricCard
+              label="Worst entry loss"
+              value={selectedRun.entryStress.worstByLoss ? formatPercent(selectedRun.entryStress.worstByLoss.minLoss) : "N/A"}
+              tone={stressMetricTone(selectedRun.entryStress.worstByLoss?.minLoss ?? 0)}
+            />
+            <MetricCard
+              label="Worst recovery"
+              value={formatRecoveryDuration(selectedRun.entryStress.worstByLoss)}
+              tone={selectedRun.entryStress.tone}
+            />
           </div>
 
           <div className="chart-panel">
@@ -358,6 +406,77 @@ export default function Home() {
             </div>
             <EquityChart points={selectedRun.points} label={selectedRun.title} />
           </div>
+
+          <section className="stress-panel">
+            <div className="section-head compact">
+              <div>
+                <span className="eyebrow">Bad Timing Stress Test</span>
+                <h2>What if a client started at the worst historical entry point?</h2>
+              </div>
+              <p>
+                Every eligible trading-day start is normalized to 100. The table ranks the
+                worst starts by loss from the entry date, then measures how long breakeven took.
+              </p>
+            </div>
+            <div className="stress-summary">
+              <MetricCard
+                label="Worst observed start"
+                value={selectedRun.entryStress.worstByLoss?.startDate ?? "N/A"}
+                tone="neutral"
+              />
+              <MetricCard
+                label="Deepest loss from entry"
+                value={selectedRun.entryStress.worstByLoss ? formatPercent(selectedRun.entryStress.worstByLoss.minLoss) : "N/A"}
+                tone={stressMetricTone(selectedRun.entryStress.worstByLoss?.minLoss ?? 0)}
+              />
+              <MetricCard
+                label="Median recovery"
+                value={formatDays(selectedRun.entryStress.medianRecoveryDays)}
+                tone="calm"
+              />
+              <MetricCard
+                label="90th percentile recovery"
+                value={formatDays(selectedRun.entryStress.p90RecoveryDays)}
+                tone={selectedRun.entryStress.p90RecoveryDays != null && selectedRun.entryStress.p90RecoveryDays <= 365 ? "calm" : "warning"}
+              />
+              <article className={`verdict-card ${selectedRun.entryStress.tone}`}>
+                <span>Client-readiness verdict</span>
+                <strong>{selectedRun.entryStress.verdict}</strong>
+                <small>
+                  Ranked starts require at least {selectedRun.entryStress.minFollowThroughDays} trading days of follow-through.
+                  {selectedRun.entryStress.unrecoveredCount > 0 ? ` ${selectedRun.entryStress.unrecoveredCount} cohorts were still below breakeven at latest close.` : " All losing cohorts recovered by latest close."}
+                </small>
+              </article>
+            </div>
+            <div className="table-wrap stress-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Entry date</th>
+                    <th>Deepest loss</th>
+                    <th>Trough date</th>
+                    <th>Breakeven date</th>
+                    <th>Recovery time</th>
+                    <th>Final return</th>
+                    <th>Start CAGR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedRun.entryStress.cohorts.slice(0, 6).map((cohort) => (
+                    <tr key={`${selectedRun.id}-${cohort.startDate}`}>
+                      <td>{cohort.startDate}</td>
+                      <td>{formatPercent(cohort.minLoss)}</td>
+                      <td>{cohort.troughDate}</td>
+                      <td>{cohort.recoveryDate ?? "Not recovered"}</td>
+                      <td>{formatRecoveryDuration(cohort)}</td>
+                      <td>{formatPercent(cohort.finalReturn)}</td>
+                      <td>{formatPercent(cohort.cagr)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
           <div className="detail-grid">
             <section className="panel">
@@ -407,6 +526,8 @@ export default function Home() {
                 <th>Sharpe</th>
                 <th>Exposure</th>
                 <th>Trades</th>
+                <th>Worst entry loss</th>
+                <th>Worst recovery</th>
                 <th>Current allocation</th>
                 <th>Window</th>
               </tr>
@@ -423,6 +544,8 @@ export default function Home() {
                   <td>{formatNumber(run.stats.sharpe, 2)}</td>
                   <td>{formatPercent(run.stats.exposure)}</td>
                   <td>{run.stats.trades}</td>
+                  <td>{run.entryStress.worstByLoss ? formatPercent(run.entryStress.worstByLoss.minLoss) : "N/A"}</td>
+                  <td>{formatRecoveryDuration(run.entryStress.worstByLoss)}</td>
                   <td>{run.currentAllocation}</td>
                   <td>
                     {run.stats.startDate}
@@ -944,7 +1067,7 @@ function waitingReasonCandidateC(
 }
 
 function makeRun(input: {
-  copy: Omit<StrategyRun, "points" | "stats" | "currentAllocation" | "latestReason" | "trades">;
+  copy: Omit<StrategyRun, "points" | "stats" | "currentAllocation" | "latestReason" | "trades" | "entryStress">;
   points: StrategyPoint[];
   trades: ClosedTrade[];
   tradeCount: number;
@@ -967,6 +1090,7 @@ function makeRun(input: {
     trades: input.trades,
     currentAllocation: input.currentAllocation,
     latestReason: input.latestReason,
+    entryStress: analyzeEntryTiming(input.points),
   };
 }
 
@@ -999,6 +1123,119 @@ function summarizeStats(
     endDate: last.date,
     winRate: closedTrades.length === 0 ? null : winningTrades / closedTrades.length,
   };
+}
+
+function analyzeEntryTiming(points: StrategyPoint[]): EntryStressTest {
+  const cohorts: EntryCohort[] = [];
+  const last = points.at(-1);
+  if (!last || points.length <= MIN_ENTRY_FOLLOW_THROUGH_DAYS + 1) {
+    return {
+      cohorts,
+      worstByLoss: null,
+      slowestRecovery: null,
+      medianRecoveryDays: null,
+      p90RecoveryDays: null,
+      unrecoveredCount: 0,
+      observedStartCount: 0,
+      minFollowThroughDays: MIN_ENTRY_FOLLOW_THROUGH_DAYS,
+      verdict: "Not enough history to score entry timing.",
+      tone: "neutral",
+    };
+  }
+
+  const lastEligibleStart = points.length - MIN_ENTRY_FOLLOW_THROUGH_DAYS - 1;
+  for (let startIndex = 0; startIndex <= lastEligibleStart; startIndex += 1) {
+    const startPoint = points[startIndex];
+    if (startPoint.equity <= 0) continue;
+
+    let troughIndex = startIndex;
+    let minRatio = 1;
+    for (let index = startIndex; index < points.length; index += 1) {
+      const ratio = points[index].equity / startPoint.equity;
+      if (ratio < minRatio) {
+        minRatio = ratio;
+        troughIndex = index;
+      }
+    }
+
+    let recoveryIndex: number | null = startIndex;
+    if (minRatio < 1) {
+      recoveryIndex = null;
+      for (let index = troughIndex; index < points.length; index += 1) {
+        if (points[index].equity >= startPoint.equity) {
+          recoveryIndex = index;
+          break;
+        }
+      }
+    }
+
+    const years = Math.max(1 / 252, calendarYears(startPoint.date, last.date));
+    const finalReturn = last.equity / startPoint.equity - 1;
+    cohorts.push({
+      startDate: startPoint.date,
+      troughDate: points[troughIndex].date,
+      recoveryDate: recoveryIndex == null ? null : points[recoveryIndex].date,
+      minLoss: minRatio - 1,
+      finalReturn,
+      cagr: Math.pow(1 + finalReturn, 1 / years) - 1,
+      tradingDaysToTrough: troughIndex - startIndex,
+      tradingDaysToRecovery: recoveryIndex == null ? null : recoveryIndex - startIndex,
+      calendarDaysToRecovery: recoveryIndex == null ? null : calendarDays(startPoint.date, points[recoveryIndex].date),
+      startIndex,
+    });
+  }
+
+  const ranked = [...cohorts].sort((left, right) => {
+    if (left.minLoss !== right.minLoss) return left.minLoss - right.minLoss;
+    return (right.calendarDaysToRecovery ?? Number.POSITIVE_INFINITY) - (left.calendarDaysToRecovery ?? Number.POSITIVE_INFINITY);
+  });
+  const recoveredLosingCohorts = cohorts
+    .filter((cohort) => cohort.minLoss < 0 && cohort.calendarDaysToRecovery != null)
+    .map((cohort) => cohort.calendarDaysToRecovery!)
+    .sort((left, right) => left - right);
+  const unrecoveredCount = cohorts.filter((cohort) => cohort.minLoss < 0 && cohort.recoveryDate == null).length;
+  const slowestRecovery = maxBy(
+    cohorts.filter((cohort) => cohort.calendarDaysToRecovery != null),
+    (cohort) => cohort.calendarDaysToRecovery ?? 0,
+  );
+  const worstByLoss = ranked[0] ?? null;
+  const medianRecoveryDays = percentile(recoveredLosingCohorts, 0.5);
+  const p90RecoveryDays = percentile(recoveredLosingCohorts, 0.9);
+  const verdict = entryStressVerdict(worstByLoss, p90RecoveryDays, unrecoveredCount);
+
+  return {
+    cohorts: ranked,
+    worstByLoss,
+    slowestRecovery,
+    medianRecoveryDays,
+    p90RecoveryDays,
+    unrecoveredCount,
+    observedStartCount: cohorts.length,
+    minFollowThroughDays: MIN_ENTRY_FOLLOW_THROUGH_DAYS,
+    verdict: verdict.text,
+    tone: verdict.tone,
+  };
+}
+
+function entryStressVerdict(
+  worstByLoss: EntryCohort | null,
+  p90RecoveryDays: number | null,
+  unrecoveredCount: number,
+) {
+  if (!worstByLoss) {
+    return { text: "Not enough entry cohorts to score.", tone: "neutral" as const };
+  }
+  if (unrecoveredCount > 0) {
+    return { text: "Not bulletproof yet: some historical starts are still below breakeven.", tone: "danger" as const };
+  }
+  const worstRecovery = worstByLoss.calendarDaysToRecovery;
+  if (worstRecovery != null && worstRecovery <= 365 && (p90RecoveryDays ?? 0) <= 180) {
+    return { text: "Strong: worst start recovered within a year and most recoveries were faster.", tone: "positive" as const };
+  }
+  if (worstRecovery != null && worstRecovery <= 730) {
+    return { text: "Credible but not bulletproof: worst start recovered within two years.", tone: "warning" as const };
+  }
+  return { text: "Needs more risk work: worst start recovery was too slow for a client promise.", tone: "danger" as const };
 }
 
 function alignHistories(histories: CompleteHistoryMap, symbols: SymbolKey[]) {
@@ -1135,7 +1372,7 @@ function EquityChart({ points, label }: { points: StrategyPoint[]; label: string
   );
 }
 
-function MetricCard({ label, value, tone }: { label: string; value: string; tone: "positive" | "warning" | "calm" | "neutral" }) {
+function MetricCard({ label, value, tone }: { label: string; value: string; tone: "positive" | "warning" | "danger" | "calm" | "neutral" }) {
   return (
     <article className={`metric ${tone}`}>
       <span>{label}</span>
@@ -1161,6 +1398,13 @@ function maxBy<T>(items: T[], scorer: (item: T) => number) {
   }, null);
 }
 
+function percentile(values: number[], percentileRank: number) {
+  if (values.length === 0) return null;
+  if (values.length === 1) return values[0];
+  const index = Math.min(values.length - 1, Math.max(0, Math.ceil(percentileRank * values.length) - 1));
+  return values[index];
+}
+
 function mean(values: number[]) {
   if (values.length === 0) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
@@ -1175,6 +1419,10 @@ function standardDeviation(values: number[]) {
 
 function calendarYears(start: string, end: string) {
   return (Date.parse(`${end}T00:00:00.000Z`) - Date.parse(`${start}T00:00:00.000Z`)) / (365.25 * 24 * 60 * 60 * 1000);
+}
+
+function calendarDays(start: string, end: string) {
+  return Math.max(0, Math.round((Date.parse(`${end}T00:00:00.000Z`) - Date.parse(`${start}T00:00:00.000Z`)) / (24 * 60 * 60 * 1000)));
 }
 
 function clampNumber(value: number, min: number, max: number) {
@@ -1196,4 +1444,27 @@ function formatCurrency(value: number) {
 
 function formatNumber(value: number, decimals: number) {
   return value.toFixed(decimals);
+}
+
+function stressMetricTone(loss: number): "positive" | "warning" | "danger" | "calm" | "neutral" {
+  if (loss >= -0.1) return "positive";
+  if (loss >= -0.25) return "calm";
+  if (loss >= -0.4) return "warning";
+  return "danger";
+}
+
+function formatDays(days: number | null) {
+  if (days == null) return "N/A";
+  if (days === 0) return "0 days";
+  if (days < 31) return `${days} days`;
+  const months = days / 30.4375;
+  if (months < 24) return `${months.toFixed(1)} mo`;
+  return `${(days / 365.25).toFixed(1)} yrs`;
+}
+
+function formatRecoveryDuration(cohort: EntryCohort | null | undefined) {
+  if (!cohort) return "N/A";
+  if (cohort.minLoss >= 0) return "No loss";
+  if (cohort.calendarDaysToRecovery == null) return "Not recovered";
+  return formatDays(cohort.calendarDaysToRecovery);
 }
