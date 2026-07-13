@@ -1,7 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
-import { ETF_UNIVERSE, type EtfProfile } from "./data/etfs";
+import { useEffect, useMemo, useState } from "react";
 
 type Bar = {
   date: string;
@@ -12,1130 +11,1189 @@ type Bar = {
   volume: number | null;
 };
 
-type Signal = "bullish" | "bearish" | "neutral" | "warmup";
+type SymbolKey = "SPY" | "QQQ" | "TQQQ" | "BIL" | "SMH" | "SOXL";
+type StrategyId = "A" | "B" | "C";
+type Position = "BIL" | "TQQQ" | "SOXL" | "CASH";
 
-type BacktestPoint = {
+type StrategyPoint = {
   date: string;
-  close: number;
   equity: number;
-  position: number;
-  signal: Signal;
-  rsi: number | null;
-  upper: number | null;
-  lower: number | null;
+  drawdown: number;
+  position: Position;
+  reason: string;
+  exposure: boolean;
+};
+
+type ClosedTrade = {
+  entryDate: string;
+  exitDate: string;
+  asset: "SOXL";
+  entryPrice: number;
+  exitPrice: number;
+  returnPct: number;
+  days: number;
   reason: string;
 };
 
-type BacktestResult = {
-  points: BacktestPoint[];
-  startDate: string | null;
-  endDate: string | null;
-  tradingDays: number;
-  testedYears: number;
-  finalEquity: number;
+type StrategyStats = {
   cagr: number;
-  sharpe: number;
-  maxDrawdown: number;
   totalReturn: number;
-  buyHoldReturn: number;
-  buyHoldCagr: number;
-  buyHoldMaxDrawdown: number;
-  alphaVsBuyHold: number;
+  maxDrawdown: number;
+  sharpe: number;
   trades: number;
   exposure: number;
-  latestSignal: BacktestPoint | null;
-  signalCount: number;
+  finalEquity: number;
+  testedYears: number;
+  startDate: string;
+  endDate: string;
+  winRate: number | null;
 };
 
-type StrategySynthesis = {
-  score: number;
-  grade: string;
-  tone: "strong" | "good" | "mixed" | "weak" | "empty";
-  verdict: string;
-  edge: string;
-  risk: string;
-  activity: string;
-  driver: string;
+type StrategyRun = {
+  id: StrategyId;
+  title: string;
+  label: string;
+  subtitle: string;
+  plainEnglish: string;
+  riskProfile: string;
+  symbols: string[];
+  rules: string[];
+  exits: string[];
+  caveat: string;
+  points: StrategyPoint[];
+  stats: StrategyStats;
+  currentAllocation: string;
+  latestReason: string;
+  trades: ClosedTrade[];
 };
 
-type CachedRun = {
-  status: "idle" | "loading" | "ready" | "error";
-  range?: string;
-  bars?: Bar[];
-  result?: BacktestResult;
-  synthesis?: StrategySynthesis;
-  error?: string;
-  updatedThrough?: string;
-};
+type HistoryMap = Partial<Record<SymbolKey, Bar[]>>;
+type CompleteHistoryMap = Record<SymbolKey, Bar[]>;
 
-type MetricTone = Signal | StrategySynthesis["tone"];
+const REQUIRED_SYMBOLS: SymbolKey[] = ["SPY", "QQQ", "TQQQ", "BIL", "SMH", "SOXL"];
+const INITIAL_CASH = 100000;
+const DEFAULT_COST_BPS = 0;
 
-const PERIOD_OPTIONS = [
-  { label: "Since inception", value: "max" },
-  { label: "1Y", value: "1y" },
-  { label: "3Y", value: "3y" },
-  { label: "5Y", value: "5y" },
-  { label: "10Y", value: "10y" },
-];
-
-const DEFAULT_SETTINGS = {
-  bbPeriod: 20,
-  bbDeviations: 2,
-  rsiPeriod: 14,
-  overbought: 70,
-  oversold: 30,
-  initialCash: 100000,
-  mode: "long-cash",
+const STRATEGY_COPY: Record<StrategyId, Omit<StrategyRun, "points" | "stats" | "currentAllocation" | "latestReason" | "trades">> = {
+  A: {
+    id: "A",
+    title: "TQQQ Nasdaq Regime Cooldown",
+    label: "Candidate A",
+    subtitle: "High-growth Nasdaq sleeve with SPY and QQQ safety gates",
+    plainEnglish:
+      "Own TQQQ only when the broad market and Nasdaq trend are healthy. Step aside to BIL when the market breaks trend, volatility is too hot, or TQQQ looks overextended.",
+    riskProfile: "Aggressive growth, moderated by regime filters",
+    symbols: ["SPY", "QQQ", "TQQQ", "BIL"],
+    rules: [
+      "Hold BIL while indicators warm up.",
+      "Hold BIL when SPY is below its 200-day average.",
+      "Hold BIL when QQQ is below its 180-day average.",
+      "Hold BIL when TQQQ RSI(10) is above 79, then cool down for 3 sessions.",
+      "Hold BIL when QQQ 20-day realized volatility is above 35%.",
+      "Own TQQQ when SPY and QQQ trend confirmation is positive.",
+      "Own TQQQ on a QQQ oversold bounce if QQQ is still above its 180-day average.",
+      "Otherwise own TQQQ only when SPY is above its 20-day average.",
+    ],
+    exits: [
+      "Exit to BIL on any failed trend gate.",
+      "Exit to BIL on overbought TQQQ RSI and respect the cooldown.",
+      "Exit to BIL during high-volatility Nasdaq regimes.",
+    ],
+    caveat:
+      "This is not pure mean reversion. It is a leveraged regime strategy that uses mean-reversion entries only inside a healthy Nasdaq tape.",
+  },
+  B: {
+    id: "B",
+    title: "SOXL Semiconductor Regime Cooldown",
+    label: "Candidate B",
+    subtitle: "Semiconductor beta with SMH trend and volatility controls",
+    plainEnglish:
+      "Use SMH as the cleaner semiconductor signal and SOXL as the high-octane execution sleeve. Move to BIL when semiconductors or the broad market lose trend.",
+    riskProfile: "Very aggressive sector leverage",
+    symbols: ["SPY", "SMH", "SOXL", "BIL"],
+    rules: [
+      "Hold BIL while indicators warm up.",
+      "Hold BIL when SPY is below its 200-day average.",
+      "Hold BIL when SMH is below its 200-day average.",
+      "Hold BIL when SOXL RSI(10) is above 79, then cool down for 2 sessions.",
+      "Hold BIL when SMH 20-day realized volatility is above 40%.",
+      "Own SOXL when SMH 20-day average is above its 200-day average.",
+      "Own SOXL on a SMH oversold bounce if SMH remains above its 200-day average.",
+      "Otherwise own SOXL only when SMH closes above its 20-day average.",
+    ],
+    exits: [
+      "Exit to BIL on failed SPY or SMH trend gates.",
+      "Exit to BIL when SOXL becomes overbought and wait through the cooldown.",
+      "Exit to BIL during high-volatility semiconductor regimes.",
+    ],
+    caveat:
+      "The return engine is powerful because SOXL is powerful. The drawdowns can still be severe, so this belongs in the high-return and high-pain bucket.",
+  },
+  C: {
+    id: "C",
+    title: "SOXL/SMH Explicit Mean-Reversion Exit",
+    label: "Candidate C",
+    subtitle: "Lower-exposure bounce trades with ATR targets, stops, and time exits",
+    plainEnglish:
+      "Wait for SMH to wash out below its lower Bollinger Band while its long-term trend is intact. Enter SOXL the next open, then exit by target, stop, mean reversion, or time.",
+    riskProfile: "Selective mean reversion with defined exits",
+    symbols: ["SMH", "SOXL"],
+    rules: [
+      "Use SMH Bollinger Bands(20, 2.0), RSI(14), and the SMH 200-day average.",
+      "Enter SOXL next open when SMH touches the lower band, RSI(14) is 40 or lower, and SMH is above its 200-day average.",
+      "Size the test as fully invested when a trade is active and cash otherwise.",
+      "Stay out while indicators are warming up or the SMH long-term trend is broken.",
+    ],
+    exits: [
+      "Take profit at entry plus 2.0 x SOXL ATR(14).",
+      "Stop out at entry minus 1.5 x SOXL ATR(14).",
+      "Exit next open when SMH reaches its middle Bollinger Band or RSI(14) reaches 50.",
+      "Exit after 20 trading days if the bounce does not resolve.",
+      "When both stop and target are inside the same daily bar, assume the stop hits first.",
+    ],
+    caveat:
+      "This is the most faithful mean-reversion design, but it may lag A and B because it spends much more time in cash.",
+  },
 };
 
 export default function Home() {
-  const [universe, setUniverse] = useState<EtfProfile[]>(ETF_UNIVERSE);
-  const [query, setQuery] = useState("");
-  const [selectedSymbol, setSelectedSymbol] = useState(ETF_UNIVERSE[0].symbol);
-  const [period, setPeriod] = useState("max");
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [bars, setBars] = useState<Bar[]>([]);
-  const [status, setStatus] = useState("Ready");
-  const [batchStatus, setBatchStatus] = useState("No inception batch run yet");
+  const [histories, setHistories] = useState<HistoryMap>({});
+  const [selectedId, setSelectedId] = useState<StrategyId>("A");
+  const [status, setStatus] = useState("Loading full-history market data");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [comparisonRuns, setComparisonRuns] = useState<Record<string, CachedRun>>({});
-  const [isAnalyzingUniverse, setIsAnalyzingUniverse] = useState(false);
-  const [comparisonLimit, setComparisonLimit] = useState(72);
-
-  const eligibleUniverse = useMemo(
-    () => universe.filter((etf) => etf.stockCount > 10),
-    [universe],
-  );
-
-  const selectedEtf = useMemo(
-    () => eligibleUniverse.find((etf) => etf.symbol === selectedSymbol) ?? eligibleUniverse[0],
-    [eligibleUniverse, selectedSymbol],
-  );
-
-  const filteredUniverse = useMemo(() => {
-    const normalized = query.trim().toUpperCase();
-    if (!normalized) return eligibleUniverse;
-    return eligibleUniverse.filter((etf) =>
-      `${etf.symbol} ${etf.name} ${etf.segment}`.toUpperCase().includes(normalized),
-    );
-  }, [eligibleUniverse, query]);
-
-  const result = useMemo(
-    () => runBacktest(bars, settings),
-    [bars, settings],
-  );
-  const selectedSynthesis = useMemo(
-    () => synthesizeStrategy(result),
-    [result],
-  );
-  const selectedRunLabel = useMemo(
-    () => runWindowLabel(result),
-    [result],
-  );
-  const rankedUniverse = useMemo(() => {
-    return [...filteredUniverse].sort((left, right) => {
-      const leftRun = comparisonRuns[left.symbol];
-      const rightRun = comparisonRuns[right.symbol];
-      const leftScore = leftRun?.range === period ? leftRun.synthesis?.score ?? -1 : -1;
-      const rightScore = rightRun?.range === period ? rightRun.synthesis?.score ?? -1 : -1;
-      if (rightScore !== leftScore) return rightScore - leftScore;
-      return left.symbol.localeCompare(right.symbol);
-    });
-  }, [comparisonRuns, filteredUniverse, period]);
-  const analyzedCount = useMemo(
-    () => filteredUniverse.filter((etf) => comparisonRuns[etf.symbol]?.status === "ready" && comparisonRuns[etf.symbol]?.range === period).length,
-    [comparisonRuns, filteredUniverse, period],
-  );
+  const [initialCash, setInitialCash] = useState(INITIAL_CASH);
+  const [costBps, setCostBps] = useState(DEFAULT_COST_BPS);
 
   useEffect(() => {
-    if (!selectedEtf) return;
-    const cached = comparisonRuns[selectedEtf.symbol];
-    if (cached?.bars?.length && cached.range === period) {
-      setBars(cached.bars);
-      setStatus(`${selectedEtf.symbol} loaded from cache ${rangeCopy(period)} through ${cached.updatedThrough ?? "latest close"}`);
-      return;
-    }
     const controller = new AbortController();
-    fetchHistory(selectedEtf.symbol, period, controller.signal);
+    loadHistories(controller.signal);
     return () => controller.abort();
-  }, [selectedEtf, period]);
+  }, []);
 
-  useEffect(() => {
-    setComparisonRuns((current) =>
-      Object.fromEntries(
-        Object.entries(current).map(([symbol, run]) => {
-          if (!run.bars?.length) return [symbol, run];
-          const runResult = runBacktest(run.bars, settings);
-          return [
-            symbol,
-            {
-              ...run,
-              result: runResult,
-              synthesis: synthesizeStrategy(runResult),
-            },
-          ];
-        }),
-      ),
-    );
-  }, [settings]);
+  const completeHistories = useMemo(
+    () => (hasCompleteHistories(histories) ? histories : null),
+    [histories],
+  );
 
-  function updateSetting(key: keyof typeof settings, value: number | string) {
-    setSettings((current) => ({ ...current, [key]: value }));
-  }
+  const runs = useMemo(
+    () => (completeHistories ? buildStrategyRuns(completeHistories, initialCash, costBps) : []),
+    [completeHistories, initialCash, costBps],
+  );
 
-  async function fetchHistory(symbol: string, range: string, signal?: AbortSignal) {
+  const selectedRun = useMemo(
+    () => runs.find((run) => run.id === selectedId) ?? runs[0] ?? null,
+    [runs, selectedId],
+  );
+
+  const bestCagr = useMemo(
+    () => maxBy(runs, (run) => run.stats.cagr),
+    [runs],
+  );
+
+  const bestDrawdown = useMemo(
+    () => maxBy(runs, (run) => run.stats.maxDrawdown),
+    [runs],
+  );
+
+  const newestDate = useMemo(() => {
+    const dates = REQUIRED_SYMBOLS.flatMap((symbol) => histories[symbol]?.at(-1)?.date ?? []);
+    return dates.sort().at(-1) ?? "latest close";
+  }, [histories]);
+
+  async function loadHistories(signal?: AbortSignal) {
     setIsLoading(true);
     setError("");
-    setStatus(`Loading ${symbol}`);
+    setStatus("Loading SPY, QQQ, TQQQ, BIL, SMH, and SOXL from inception");
+
     try {
-      const response = await fetch(`/api/history?symbol=${encodeURIComponent(symbol)}&range=${range}`, { signal });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Price request failed");
-      }
-      setBars(payload.bars);
-      cacheRun(symbol, payload.bars, range);
-      const firstDate = payload.bars.at(0)?.date ?? "first available close";
-      const lastDate = payload.bars.at(-1)?.date ?? "latest close";
-      setStatus(`${symbol} tested ${rangeCopy(range)} from ${firstDate} through ${lastDate}`);
+      const results = await Promise.all(
+        REQUIRED_SYMBOLS.map(async (symbol) => {
+          const response = await fetch(`/api/history?symbol=${symbol}&range=max`, { signal });
+          const payload = await response.json();
+          if (!response.ok) {
+            throw new Error(payload.error ?? `Could not load ${symbol}`);
+          }
+          return [symbol, payload.bars as Bar[]] as const;
+        }),
+      );
+
+      const nextHistories = Object.fromEntries(results) as CompleteHistoryMap;
+      setHistories(nextHistories);
+      const latest = results.map(([, bars]) => bars.at(-1)?.date ?? "").sort().at(-1);
+      setStatus(`Live full-history backtests updated through ${latest ?? "latest close"}`);
     } catch (caught) {
       if (caught instanceof DOMException && caught.name === "AbortError") return;
-      setBars([]);
-      setError(caught instanceof Error ? caught.message : "Price request failed");
-      setStatus("Data unavailable");
+      setError(caught instanceof Error ? caught.message : "Could not load market data");
+      setStatus("Market data unavailable");
     } finally {
       setIsLoading(false);
     }
   }
 
-  async function analyzeOneEtf(symbol: string) {
-    setComparisonRuns((current) => ({
-      ...current,
-      [symbol]: { status: "loading", range: period },
-    }));
-    try {
-      const response = await fetch(`/api/history?symbol=${encodeURIComponent(symbol)}&range=${period}`);
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Price request failed");
-      }
-      cacheRun(symbol, payload.bars, period);
-    } catch (caught) {
-      setComparisonRuns((current) => ({
-        ...current,
-        [symbol]: {
-          status: "error",
-          error: caught instanceof Error ? caught.message : "Price request failed",
-        },
-      }));
-    }
-  }
-
-  async function analyzeVisibleUniverse() {
-    setIsAnalyzingUniverse(true);
-    setBatchStatus(`Backtesting ${Math.min(comparisonLimit, filteredUniverse.length)} ETF strategies ${rangeCopy(period)}`);
-    const symbols = filteredUniverse.slice(0, comparisonLimit).map((etf) => etf.symbol);
-    for (const symbol of symbols) {
-      const existing = comparisonRuns[symbol];
-      if (existing?.status === "ready" && existing.result && existing.range === period) continue;
-      await analyzeOneEtf(symbol);
-    }
-    setIsAnalyzingUniverse(false);
-    setBatchStatus(`Backtested ${symbols.length} ETF strategies ${rangeCopy(period)}`);
-  }
-
-  function selectAnalyzedEtf(symbol: string) {
-    setSelectedSymbol(symbol);
-    const cached = comparisonRuns[symbol];
-    if (cached?.bars?.length && cached.range === period) {
-      setBars(cached.bars);
-      setStatus(`${symbol} loaded from analyzed comparison ${rangeCopy(period)} ${cached.updatedThrough ? `through ${cached.updatedThrough}` : ""}`.trim());
-    }
-  }
-
-  function cacheRun(symbol: string, loadedBars: Bar[], range: string) {
-    const runResult = runBacktest(loadedBars, settings);
-    setComparisonRuns((current) => ({
-      ...current,
-      [symbol]: {
-        status: "ready",
-        range,
-        bars: loadedBars,
-        result: runResult,
-        synthesis: synthesizeStrategy(runResult),
-        updatedThrough: loadedBars.at(-1)?.date,
-      },
-    }));
-  }
-
-  function addCustomEtf(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const symbol = String(form.get("symbol") ?? "").trim().toUpperCase();
-    const name = String(form.get("name") ?? "").trim() || `${symbol} ETF`;
-    const stockCount = Number(form.get("stockCount") ?? 11);
-    if (!symbol || stockCount <= 10) return;
-    const profile: EtfProfile = {
-      symbol,
-      name,
-      segment: "Imported",
-      stockCount,
-    };
-    setUniverse((current) => [profile, ...current.filter((etf) => etf.symbol !== symbol)]);
-    setSelectedSymbol(symbol);
-    event.currentTarget.reset();
-  }
-
-  function importUniverse(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const rows = String(reader.result ?? "").split(/\r?\n/).filter(Boolean);
-      const [header, ...body] = rows;
-      const headers = header.split(",").map((item) => item.trim().toLowerCase());
-      const symbolIndex = headers.indexOf("symbol");
-      const nameIndex = headers.indexOf("name");
-      const stockCountIndex = headers.indexOf("stockcount");
-      const segmentIndex = headers.indexOf("segment");
-      if (symbolIndex < 0 || stockCountIndex < 0) {
-        setError("CSV needs symbol and stockCount columns");
-        return;
-      }
-      const imported = body
-        .map((row) => row.split(","))
-        .map((columns) => ({
-          symbol: columns[symbolIndex]?.trim().toUpperCase(),
-          name: columns[nameIndex]?.trim() || columns[symbolIndex]?.trim().toUpperCase(),
-          stockCount: Number(columns[stockCountIndex]),
-          segment: columns[segmentIndex]?.trim() || "Imported",
-        }))
-        .filter((etf): etf is EtfProfile => Boolean(etf.symbol) && etf.stockCount > 10);
-      if (imported.length) {
-        setUniverse((current) => [...imported, ...current]);
-        setSelectedSymbol(imported[0].symbol);
-        setStatus(`Imported ${imported.length} eligible ETFs`);
-      }
-    };
-    reader.readAsText(file);
-  }
-
   return (
-    <main className="min-h-screen bg-[#f7f4ee] text-[#1d2528]">
-      <section className="border-b border-[#d9d0c1] bg-[#f7f4ee]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase text-[#7b4a23]">Agentic Trading</p>
-              <h1 className="mt-1 text-3xl font-semibold text-[#182326] sm:text-4xl">
-                Strategy 2: ETF Inception Backtester
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#586064]">
-                Each eligible ETF is tested from its first available daily price by default.
-                The rules enter after lower-band/oversold signals and step aside after upper-band/overbought signals.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {PERIOD_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  className={`control-button ${period === option.value ? "active" : ""}`}
-                  onClick={() => setPeriod(option.value)}
-                  type="button"
-                >
-                  {option.label}
-                </button>
-              ))}
-              <button
-                className="primary-button"
-                disabled={isLoading || !selectedEtf}
-                onClick={() => selectedEtf && fetchHistory(selectedEtf.symbol, period)}
-                type="button"
-              >
-                Refresh
-              </button>
-            </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-5">
-            <Metric label="ETF strategies" value={String(eligibleUniverse.length)} />
-            <Metric label="Test window" value={selectedRunLabel} />
-            <Metric label="Latest signal" value={signalLabel(result.latestSignal?.signal)} tone={result.latestSignal?.signal} />
-            <Metric label="Fit score" value={`${selectedSynthesis.score}/100`} tone={selectedSynthesis.tone} />
-            <Metric label="Verdict" value={selectedSynthesis.grade} tone={selectedSynthesis.tone} />
-          </div>
+    <main className="min-h-screen">
+      <section className="product-hero">
+        <div className="hero-copy">
+          <span className="eyebrow">ABC Strategy Lab</span>
+          <h1>Live inception backtests for the three candidate strategies.</h1>
+          <p>
+            The previous ETF-wide Bollinger/RSI screen is archived below. This page now
+            focuses on A/B/C with explicit allocation rules, exits, and performance that
+            can be read at a glance.
+          </p>
+        </div>
+        <div className="hero-actions">
+          <button className="primary-button" type="button" onClick={() => loadHistories()} disabled={isLoading}>
+            {isLoading ? "Refreshing..." : "Refresh live data"}
+          </button>
+          <span>{status}</span>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[320px_1fr] lg:px-8">
-        <aside className="space-y-4">
-          <div className="panel">
-            <label className="field-label" htmlFor="search">ETF universe</label>
-            <input
-              id="search"
-              className="text-input"
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search symbol, name, segment"
-              value={query}
-            />
-            <div className="mt-3 max-h-[420px] space-y-2 overflow-auto pr-1">
-              {filteredUniverse.map((etf) => (
-                <button
-                  className={`etf-row ${etf.symbol === selectedEtf?.symbol ? "selected" : ""}`}
-                  key={`${etf.symbol}-${etf.segment}`}
-                  onClick={() => selectAnalyzedEtf(etf.symbol)}
-                  type="button"
-                >
-                  <span>
-                    <strong>{etf.symbol}</strong>
-                    <small>{etf.segment}</small>
-                  </span>
-                  <span className="etf-row-metrics">
-                    <small>{comparisonRuns[etf.symbol]?.range === period ? comparisonRuns[etf.symbol]?.synthesis?.grade ?? "Run" : "Run"}</small>
-                    <b>{comparisonRuns[etf.symbol]?.range === period ? comparisonRuns[etf.symbol]?.synthesis?.score ?? `${etf.stockCount} stk` : `${etf.stockCount} stk`}</b>
-                  </span>
-                </button>
-              ))}
+      <section className="control-strip" aria-label="Backtest assumptions">
+        <label>
+          <span>Initial capital</span>
+          <input
+            min={1000}
+            step={1000}
+            type="number"
+            value={initialCash}
+            onChange={(event) => setInitialCash(clampNumber(event.target.valueAsNumber, 1000, 100000000))}
+          />
+        </label>
+        <label>
+          <span>Cost per switch, bps</span>
+          <input
+            min={0}
+            max={100}
+            step={1}
+            type="number"
+            value={costBps}
+            onChange={(event) => setCostBps(clampNumber(event.target.valueAsNumber, 0, 100))}
+          />
+        </label>
+        <div>
+          <span>Data window</span>
+          <strong>Since ETF inception, daily adjusted OHLC</strong>
+        </div>
+        <div>
+          <span>Updated through</span>
+          <strong>{newestDate}</strong>
+        </div>
+      </section>
+
+      {error ? <div className="error-banner">{error}</div> : null}
+
+      <section className="snapshot-grid" aria-label="Strategy highlights">
+        <MetricCard label="Best CAGR" value={bestCagr ? `${bestCagr.label}: ${formatPercent(bestCagr.stats.cagr)}` : "Loading"} tone="positive" />
+        <MetricCard label="Smallest drawdown" value={bestDrawdown ? `${bestDrawdown.label}: ${formatPercent(bestDrawdown.stats.maxDrawdown)}` : "Loading"} tone="calm" />
+        <MetricCard label="Strategies live" value={runs.length ? `${runs.length} of 3` : "Loading"} tone="neutral" />
+        <MetricCard label="Current focus" value={selectedRun?.label ?? "Candidate A"} tone="neutral" />
+      </section>
+
+      <section className="strategy-grid" aria-label="ABC strategy selector">
+        {(["A", "B", "C"] as StrategyId[]).map((id) => {
+          const run = runs.find((candidate) => candidate.id === id);
+          const copy = STRATEGY_COPY[id];
+          return (
+            <button
+              className={`strategy-card ${selectedId === id ? "selected" : ""}`}
+              key={id}
+              type="button"
+              onClick={() => setSelectedId(id)}
+            >
+              <span>{copy.label}</span>
+              <strong>{copy.title}</strong>
+              <p>{copy.subtitle}</p>
+              <div className="mini-metrics">
+                <b>{run ? formatPercent(run.stats.cagr) : "..."}</b>
+                <small>CAGR</small>
+                <b>{run ? formatPercent(run.stats.maxDrawdown) : "..."}</b>
+                <small>Max DD</small>
+                <b>{run ? formatPercent(run.stats.exposure) : "..."}</b>
+                <small>Exposure</small>
+              </div>
+            </button>
+          );
+        })}
+      </section>
+
+      {selectedRun ? (
+        <section className="workbench">
+          <div className="workbench-head">
+            <div>
+              <span className="eyebrow">{selectedRun.label}</span>
+              <h2>{selectedRun.title}</h2>
+              <p>{selectedRun.plainEnglish}</p>
+            </div>
+            <div className="allocation-card">
+              <span>Current allocation</span>
+              <strong>{selectedRun.currentAllocation}</strong>
+              <small>{selectedRun.latestReason}</small>
             </div>
           </div>
 
-          <div className="panel">
-            <form className="space-y-3" onSubmit={addCustomEtf}>
-              <label className="field-label">Add ETF</label>
-              <input className="text-input" name="symbol" placeholder="Ticker" />
-              <input className="text-input" name="name" placeholder="Name" />
-              <input className="text-input" min="11" name="stockCount" placeholder="Stock count" type="number" />
-              <button className="secondary-button w-full" type="submit">Add strategy</button>
-            </form>
-            <label className="mt-4 block">
-              <span className="field-label">Import CSV</span>
-              <input className="file-input" onChange={importUniverse} type="file" accept=".csv,text/csv" />
-            </label>
+          <div className="metrics-row">
+            <MetricCard label="CAGR" value={formatPercent(selectedRun.stats.cagr)} tone={selectedRun.stats.cagr > 0.3 ? "positive" : "neutral"} />
+            <MetricCard label="Max drawdown" value={formatPercent(selectedRun.stats.maxDrawdown)} tone={selectedRun.stats.maxDrawdown > -0.4 ? "calm" : "warning"} />
+            <MetricCard label="Sharpe" value={formatNumber(selectedRun.stats.sharpe, 2)} tone="neutral" />
+            <MetricCard label="Final equity" value={formatCurrency(selectedRun.stats.finalEquity)} tone="neutral" />
+            <MetricCard label="Exposure" value={formatPercent(selectedRun.stats.exposure)} tone="neutral" />
+            <MetricCard label={selectedRun.id === "C" ? "Closed trades" : "Allocation switches"} value={String(selectedRun.stats.trades)} tone="neutral" />
           </div>
-        </aside>
 
-        <div className="space-y-5">
-          <section className="panel">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="chart-panel">
+            <div className="chart-title">
               <div>
-                <p className="text-sm font-semibold uppercase text-[#7b4a23]">{selectedEtf?.segment}</p>
-                <h2 className="mt-1 text-2xl font-semibold">{selectedEtf?.symbol} · {selectedEtf?.name}</h2>
-                <p className="mt-1 text-sm text-[#667074]">{selectedEtf?.stockCount} stocks in holdings metadata · {status}</p>
-                {error ? <p className="mt-2 text-sm font-medium text-[#a33b28]">{error}</p> : null}
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2 xl:w-[620px] xl:grid-cols-4">
-                <Metric label={period === "max" ? "CAGR since inception" : "CAGR"} value={percent(result.cagr)} />
-                <Metric label="First price date" value={result.startDate ?? "—"} />
-                <Metric label="Years tested" value={result.testedYears ? result.testedYears.toFixed(1) : "—"} />
-                <Metric label="CAGR vs hold" value={percent(result.cagr - result.buyHoldCagr)} />
-              </div>
-            </div>
-
-            <div className={`synthesis-card ${selectedSynthesis.tone}`}>
-              <div>
-                <span className="synthesis-score">{selectedSynthesis.score}</span>
-                <span className="synthesis-grade">{selectedSynthesis.grade}</span>
+                <span>Equity curve</span>
+                <strong>
+                  {selectedRun.stats.startDate} to {selectedRun.stats.endDate}
+                </strong>
               </div>
               <div>
-                <h3>{selectedSynthesis.verdict}</h3>
-                <div className="synthesis-grid">
-                  <RunNote label="Edge" value={selectedSynthesis.edge} />
-                  <RunNote label="Risk" value={selectedSynthesis.risk} />
-                  <RunNote label="Activity" value={selectedSynthesis.activity} />
-                </div>
+                <span>Total return</span>
+                <strong>{formatPercent(selectedRun.stats.totalReturn)}</strong>
               </div>
             </div>
+            <EquityChart points={selectedRun.points} label={selectedRun.title} />
+          </div>
 
-            <div className="mt-5 grid gap-4 xl:grid-cols-[1fr_300px]">
-              <StrategyChart points={result.points} />
-              <div className="settings-grid">
-                <NumberField label="BB period" value={settings.bbPeriod} min={5} max={100} onChange={(value) => updateSetting("bbPeriod", value)} />
-                <NumberField label="Band stdev" value={settings.bbDeviations} min={1} max={4} step={0.25} onChange={(value) => updateSetting("bbDeviations", value)} />
-                <NumberField label="RSI period" value={settings.rsiPeriod} min={2} max={50} onChange={(value) => updateSetting("rsiPeriod", value)} />
-                <NumberField label="Overbought" value={settings.overbought} min={50} max={95} onChange={(value) => updateSetting("overbought", value)} />
-                <NumberField label="Oversold" value={settings.oversold} min={5} max={50} onChange={(value) => updateSetting("oversold", value)} />
-                <NumberField label="Initial cash" value={settings.initialCash} min={1000} max={10000000} step={1000} onChange={(value) => updateSetting("initialCash", value)} />
-                <label className="field-label">
-                  Position mode
-                  <select
-                    className="text-input mt-1"
-                    value={settings.mode}
-                    onChange={(event) => updateSetting("mode", event.target.value)}
-                  >
-                    <option value="long-cash">Long / cash</option>
-                    <option value="long-short">Long / short</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-          </section>
+          <div className="detail-grid">
+            <section className="panel">
+              <span className="section-kicker">Rules</span>
+              <h3>What has to be true</h3>
+              <ul className="rule-list">
+                {selectedRun.rules.map((rule) => <li key={rule}>{rule}</li>)}
+              </ul>
+            </section>
+            <section className="panel">
+              <span className="section-kicker">Exits</span>
+              <h3>How the strategy gets out</h3>
+              <ul className="rule-list">
+                {selectedRun.exits.map((exit) => <li key={exit}>{exit}</li>)}
+              </ul>
+            </section>
+            <section className="panel">
+              <span className="section-kicker">Read this first</span>
+              <h3>Strategy synthesis</h3>
+              <p className="plain-note">{selectedRun.riskProfile}</p>
+              <p className="plain-note">{selectedRun.caveat}</p>
+              {selectedRun.stats.winRate == null ? null : (
+                <p className="plain-note">Win rate on closed trades: {formatPercent(selectedRun.stats.winRate)}</p>
+              )}
+            </section>
+          </div>
+        </section>
+      ) : (
+        <section className="loading-panel">Waiting for live market data...</section>
+      )}
 
-          <section className="panel">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">ETF Strategy Scoreboard</h3>
-                <p className="mt-1 text-sm text-[#667074]">
-                  {analyzedCount} of {filteredUniverse.length} visible ETFs backtested · {batchStatus}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="compact-label">
-                  Backtest first
-                  <select
-                    className="compact-select"
-                    value={comparisonLimit}
-                    onChange={(event) => setComparisonLimit(Number(event.target.value))}
-                  >
-                    <option value={12}>12</option>
-                    <option value={18}>18</option>
-                    <option value={36}>36</option>
-                    <option value={72}>72</option>
-                  </select>
-                </label>
-                <button
-                  className="primary-button"
-                  disabled={isAnalyzingUniverse}
-                  onClick={analyzeVisibleUniverse}
-                  type="button"
-                >
-                  {isAnalyzingUniverse ? "Backtesting" : period === "max" ? "Backtest since inception" : `Backtest ${period.toUpperCase()}`}
-                </button>
-              </div>
-            </div>
-            <div className="scoreboard-list">
-              {rankedUniverse.slice(0, comparisonLimit).map((etf) => (
-                <ScoreboardRow
-                  etf={etf}
-                  isSelected={etf.symbol === selectedEtf?.symbol}
-                  key={`${etf.symbol}-scoreboard`}
-                  onAnalyze={() => analyzeOneEtf(etf.symbol)}
-                  onSelect={() => selectAnalyzedEtf(etf.symbol)}
-                  run={comparisonRuns[etf.symbol]?.range === period ? comparisonRuns[etf.symbol] : undefined}
-                />
+      <section className="comparison-section">
+        <div className="section-head">
+          <div>
+            <span className="eyebrow">Glance table</span>
+            <h2>Compare A/B/C on the same assumptions</h2>
+          </div>
+          <p>Higher CAGR is useful only beside drawdown, exposure, and trade count.</p>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Strategy</th>
+                <th>CAGR</th>
+                <th>Max DD</th>
+                <th>Sharpe</th>
+                <th>Exposure</th>
+                <th>Trades</th>
+                <th>Current allocation</th>
+                <th>Window</th>
+              </tr>
+            </thead>
+            <tbody>
+              {runs.map((run) => (
+                <tr key={run.id}>
+                  <td>
+                    <strong>{run.label}</strong>
+                    <small>{run.title}</small>
+                  </td>
+                  <td>{formatPercent(run.stats.cagr)}</td>
+                  <td>{formatPercent(run.stats.maxDrawdown)}</td>
+                  <td>{formatNumber(run.stats.sharpe, 2)}</td>
+                  <td>{formatPercent(run.stats.exposure)}</td>
+                  <td>{run.stats.trades}</td>
+                  <td>{run.currentAllocation}</td>
+                  <td>
+                    {run.stats.startDate}
+                    <small>to {run.stats.endDate}</small>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </section>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-          <section className="grid gap-5 xl:grid-cols-[1fr_340px]">
-            <div className="panel">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold">Signal Log</h3>
-                <span className="text-sm text-[#667074]">{result.signalCount} completed signals</span>
-              </div>
-              <div className="mt-3 max-h-[390px] overflow-auto">
-                <table className="signal-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Signal</th>
-                      <th>Close</th>
-                      <th>RSI</th>
-                      <th>Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.points.filter((point) => point.signal !== "neutral" && point.signal !== "warmup").slice(-80).reverse().map((point) => (
-                      <tr key={`${point.date}-${point.signal}`}>
-                        <td>{point.date}</td>
-                        <td><span className={`signal-pill ${point.signal}`}>{signalLabel(point.signal)}</span></td>
-                        <td>{currency(point.close)}</td>
-                        <td>{point.rsi?.toFixed(1)}</td>
-                        <td>{point.reason}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div className="panel space-y-3">
-              <h3 className="text-lg font-semibold">Run Notes</h3>
-              <RunNote label="Backtest window" value={`${selectedRunLabel}; ${period === "max" ? "Yahoo max history is requested so each ETF starts at its first available adjusted daily bar." : "Use Since inception to test the full available history for each ETF."}`} />
-              <RunNote label="Signal timing" value="Indicators use completed daily candles; allocation changes on the next close." />
-              <RunNote label="Touch rule" value="Upper band uses high >= upper band; lower band uses low <= lower band." />
-              <RunNote label="Exposure" value={`${percent(result.exposure)} in active long or short exposure.`} />
-              <RunNote label="Data" value="OHLC prices are adjusted from Yahoo chart history when adjusted close is available." />
-            </div>
-          </section>
+      <section className="archive-section">
+        <div>
+          <span className="eyebrow">Archive</span>
+          <h2>Previous strategies are retained as research, not the main product.</h2>
+          <p>
+            The old ETF-wide Bollinger/RSI entry screen is no longer ranked on the
+            main dashboard because it treated entries as positions and did not define
+            a careful trade exit. It stays here as a reference point while A/B/C get
+            the product focus.
+          </p>
+        </div>
+        <div className="archive-grid">
+          <article>
+            <strong>Archived Strategy 2</strong>
+            <span>ETF-wide Bollinger/RSI screen</span>
+            <p>Useful for finding oversold or overbought moments, but incomplete as a standalone strategy without exits.</p>
+          </article>
+          <article>
+            <strong>Archived baseline</strong>
+            <span>Original TQQQ regime strategy</span>
+            <p>High CAGR in some windows, but weaker risk control and larger drawdowns than the refined A/B/C candidates.</p>
+          </article>
         </div>
       </section>
     </main>
   );
 }
 
-function Metric({ label, value, tone }: { label: string; value: string; tone?: MetricTone }) {
-  return (
-    <div className={`metric ${tone ?? ""}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
+function buildStrategyRuns(histories: CompleteHistoryMap, initialCash: number, costBps: number) {
+  return [
+    runCandidateA(histories, initialCash, costBps),
+    runCandidateB(histories, initialCash, costBps),
+    runCandidateC(histories, initialCash, costBps),
+  ];
 }
 
-function ScoreboardRow({
-  etf,
-  run,
-  isSelected,
-  onAnalyze,
-  onSelect,
-}: {
-  etf: EtfProfile;
-  run?: CachedRun;
-  isSelected: boolean;
-  onAnalyze: () => void;
-  onSelect: () => void;
-}) {
-  const result = run?.result;
-  const synthesis = run?.synthesis;
-  return (
-    <div
-      className={`scoreboard-row ${isSelected ? "selected" : ""} ${synthesis?.tone ?? ""}`}
-      onClick={onSelect}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onSelect();
-        }
-      }}
-      role="button"
-      tabIndex={0}
-    >
-      <div className="scoreboard-title">
-        <strong>{etf.symbol}</strong>
-        <span>{etf.name}</span>
-      </div>
-      <div className="score-cell verdict">
-        <b className={`verdict-pill ${synthesis?.tone ?? "empty"}`}>{synthesis?.grade ?? statusLabel(run?.status)}</b>
-        <span>{synthesis ? `${synthesis.score}/100` : etf.segment}</span>
-      </div>
-      <MiniSparkline points={result?.points ?? []} tone={synthesis?.tone ?? "empty"} />
-      <div className="score-driver">{synthesis?.driver ?? "Run this ETF to score the strategy."}</div>
-      <div className="score-cell">
-        <b>{result ? percent(result.cagr) : "—"}</b>
-        <span>CAGR</span>
-      </div>
-      <div className="score-cell">
-        <b>{result?.startDate ?? "—"}</b>
-        <span>Start</span>
-      </div>
-      <div className="score-cell">
-        <b>{result?.testedYears ? result.testedYears.toFixed(1) : "—"}</b>
-        <span>Years</span>
-      </div>
-      <div className="score-cell">
-        <b>{result ? percent(result.buyHoldCagr) : "—"}</b>
-        <span>Hold CAGR</span>
-      </div>
-      <div className="score-cell">
-        <b>{result ? percent(result.maxDrawdown) : "—"}</b>
-        <span>Worst drop</span>
-      </div>
-      <div className="score-cell">
-        <b>{result ? signalLabel(result.latestSignal?.signal) : "—"}</b>
-        <span>Signal</span>
-      </div>
-      <button
-        className="control-button"
-        disabled={run?.status === "loading"}
-        onClick={(event) => {
-          event.stopPropagation();
-          onAnalyze();
-        }}
-        type="button"
-      >
-        {run?.status === "loading" ? "Loading" : "Run"}
-      </button>
-    </div>
-  );
-}
+function runCandidateA(histories: CompleteHistoryMap, initialCash: number, costBps: number): StrategyRun {
+  const aligned = alignHistories(histories, ["SPY", "QQQ", "TQQQ", "BIL"]);
+  const spy = closes(aligned.barsBySymbol.SPY);
+  const qqq = closes(aligned.barsBySymbol.QQQ);
+  const tqqq = closes(aligned.barsBySymbol.TQQQ);
+  const bil = closes(aligned.barsBySymbol.BIL);
+  const spySma10 = sma(spy, 10);
+  const spySma20 = sma(spy, 20);
+  const spySma200 = sma(spy, 200);
+  const qqqSma50 = sma(qqq, 50);
+  const qqqSma180 = sma(qqq, 180);
+  const qqqRsi10 = rsi(qqq, 10);
+  const tqqqRsi10 = rsi(tqqq, 10);
+  const qqqVol20 = realizedVol(qqq, 20);
+  const costRate = costBps / 10000;
 
-function MiniSparkline({
-  points,
-  tone,
-}: {
-  points: BacktestPoint[];
-  tone: StrategySynthesis["tone"];
-}) {
-  if (points.length < 2) {
-    return <div className="mini-sparkline empty" aria-label="No equity sparkline yet" />;
+  let equity = initialCash;
+  let peak = initialCash;
+  let position: Position = "BIL";
+  let heldReason = "Indicator warmup";
+  let cooldown = 0;
+  let switches = 0;
+  let exposureDays = 0;
+  const points: StrategyPoint[] = [{
+    date: aligned.dates[0],
+    equity,
+    drawdown: 0,
+    position,
+    reason: heldReason,
+    exposure: false,
+  }];
+
+  for (let index = 1; index < aligned.dates.length; index += 1) {
+    const heldCloses = position === "TQQQ" ? tqqq : bil;
+    equity *= heldCloses[index] / heldCloses[index - 1];
+    if (position === "TQQQ") exposureDays += 1;
+    peak = Math.max(peak, equity);
+    points.push({
+      date: aligned.dates[index],
+      equity,
+      drawdown: equity / peak - 1,
+      position,
+      reason: heldReason,
+      exposure: position === "TQQQ",
+    });
+
+    const decision = decideCandidateA({
+      index,
+      cooldown,
+      spy,
+      qqq,
+      spySma10,
+      spySma20,
+      spySma200,
+      qqqSma50,
+      qqqSma180,
+      qqqRsi10,
+      tqqqRsi10,
+      qqqVol20,
+    });
+    cooldown = decision.cooldown;
+    if (decision.position !== position) {
+      if (index < aligned.dates.length - 1) {
+        equity *= 1 - costRate;
+        switches += 1;
+        peak = Math.max(peak, equity);
+        const currentPoint = points[points.length - 1];
+        currentPoint.equity = equity;
+        currentPoint.drawdown = equity / peak - 1;
+      }
+      position = decision.position;
+    }
+    heldReason = decision.reason;
   }
-  const width = 96;
-  const height = 30;
-  const values = points.map((point) => point.equity);
+
+  return makeRun({
+    copy: STRATEGY_COPY.A,
+    points,
+    trades: [],
+    tradeCount: switches,
+    exposureDays,
+    initialCash,
+    currentAllocation: position === "TQQQ" ? "TQQQ" : "BIL",
+    latestReason: heldReason,
+  });
+}
+
+function decideCandidateA(input: {
+  index: number;
+  cooldown: number;
+  spy: number[];
+  qqq: number[];
+  spySma10: Array<number | null>;
+  spySma20: Array<number | null>;
+  spySma200: Array<number | null>;
+  qqqSma50: Array<number | null>;
+  qqqSma180: Array<number | null>;
+  qqqRsi10: Array<number | null>;
+  tqqqRsi10: Array<number | null>;
+  qqqVol20: Array<number | null>;
+}) {
+  const i = input.index;
+  if (
+    input.spySma10[i] == null ||
+    input.spySma20[i] == null ||
+    input.spySma200[i] == null ||
+    input.qqqSma50[i] == null ||
+    input.qqqSma180[i] == null ||
+    input.qqqRsi10[i] == null ||
+    input.tqqqRsi10[i] == null ||
+    input.qqqVol20[i] == null
+  ) {
+    return { position: "BIL" as Position, reason: "Indicator warmup", cooldown: input.cooldown };
+  }
+  if (input.spy[i] < input.spySma200[i]!) {
+    return { position: "BIL" as Position, reason: "SPY is below its 200-day trend gate", cooldown: input.cooldown };
+  }
+  if (input.qqq[i] < input.qqqSma180[i]!) {
+    return { position: "BIL" as Position, reason: "QQQ is below its 180-day trend gate", cooldown: input.cooldown };
+  }
+  if (input.tqqqRsi10[i]! > 79) {
+    return { position: "BIL" as Position, reason: "TQQQ is overbought, cooling down", cooldown: 3 };
+  }
+  if (input.cooldown > 0) {
+    return { position: "BIL" as Position, reason: "Cooldown after overbought TQQQ signal", cooldown: input.cooldown - 1 };
+  }
+  if (input.qqqVol20[i]! > 0.35) {
+    return { position: "BIL" as Position, reason: "QQQ realized volatility is above the risk brake", cooldown: input.cooldown };
+  }
+  if (input.spySma10[i]! > input.spySma200[i]! && input.qqqSma50[i]! > input.qqqSma180[i]!) {
+    return { position: "TQQQ" as Position, reason: "SPY and QQQ trend confirmation are positive", cooldown: input.cooldown };
+  }
+  if (input.qqqRsi10[i]! < 30 && input.qqq[i] > input.qqqSma180[i]!) {
+    return { position: "TQQQ" as Position, reason: "QQQ is oversold inside an intact uptrend", cooldown: input.cooldown };
+  }
+  if (input.spy[i] > input.spySma20[i]!) {
+    return { position: "TQQQ" as Position, reason: "SPY remains above its short-term trend", cooldown: input.cooldown };
+  }
+  return { position: "BIL" as Position, reason: "No positive Nasdaq setup", cooldown: input.cooldown };
+}
+
+function runCandidateB(histories: CompleteHistoryMap, initialCash: number, costBps: number): StrategyRun {
+  const aligned = alignHistories(histories, ["SPY", "SMH", "SOXL", "BIL"]);
+  const spy = closes(aligned.barsBySymbol.SPY);
+  const smh = closes(aligned.barsBySymbol.SMH);
+  const soxl = closes(aligned.barsBySymbol.SOXL);
+  const bil = closes(aligned.barsBySymbol.BIL);
+  const spySma200 = sma(spy, 200);
+  const smhSma20 = sma(smh, 20);
+  const smhSma200 = sma(smh, 200);
+  const smhRsi10 = rsi(smh, 10);
+  const soxlRsi10 = rsi(soxl, 10);
+  const smhVol20 = realizedVol(smh, 20);
+  const costRate = costBps / 10000;
+
+  let equity = initialCash;
+  let peak = initialCash;
+  let position: Position = "BIL";
+  let heldReason = "Indicator warmup";
+  let cooldown = 0;
+  let switches = 0;
+  let exposureDays = 0;
+  const points: StrategyPoint[] = [{
+    date: aligned.dates[0],
+    equity,
+    drawdown: 0,
+    position,
+    reason: heldReason,
+    exposure: false,
+  }];
+
+  for (let index = 1; index < aligned.dates.length; index += 1) {
+    const heldCloses = position === "SOXL" ? soxl : bil;
+    equity *= heldCloses[index] / heldCloses[index - 1];
+    if (position === "SOXL") exposureDays += 1;
+    peak = Math.max(peak, equity);
+    points.push({
+      date: aligned.dates[index],
+      equity,
+      drawdown: equity / peak - 1,
+      position,
+      reason: heldReason,
+      exposure: position === "SOXL",
+    });
+
+    const decision = decideCandidateB({
+      index,
+      cooldown,
+      spy,
+      smh,
+      spySma200,
+      smhSma20,
+      smhSma200,
+      smhRsi10,
+      soxlRsi10,
+      smhVol20,
+    });
+    cooldown = decision.cooldown;
+    if (decision.position !== position) {
+      if (index < aligned.dates.length - 1) {
+        equity *= 1 - costRate;
+        switches += 1;
+        peak = Math.max(peak, equity);
+        const currentPoint = points[points.length - 1];
+        currentPoint.equity = equity;
+        currentPoint.drawdown = equity / peak - 1;
+      }
+      position = decision.position;
+    }
+    heldReason = decision.reason;
+  }
+
+  return makeRun({
+    copy: STRATEGY_COPY.B,
+    points,
+    trades: [],
+    tradeCount: switches,
+    exposureDays,
+    initialCash,
+    currentAllocation: position === "SOXL" ? "SOXL" : "BIL",
+    latestReason: heldReason,
+  });
+}
+
+function decideCandidateB(input: {
+  index: number;
+  cooldown: number;
+  spy: number[];
+  smh: number[];
+  spySma200: Array<number | null>;
+  smhSma20: Array<number | null>;
+  smhSma200: Array<number | null>;
+  smhRsi10: Array<number | null>;
+  soxlRsi10: Array<number | null>;
+  smhVol20: Array<number | null>;
+}) {
+  const i = input.index;
+  if (
+    input.spySma200[i] == null ||
+    input.smhSma20[i] == null ||
+    input.smhSma200[i] == null ||
+    input.smhRsi10[i] == null ||
+    input.soxlRsi10[i] == null ||
+    input.smhVol20[i] == null
+  ) {
+    return { position: "BIL" as Position, reason: "Indicator warmup", cooldown: input.cooldown };
+  }
+  if (input.spy[i] < input.spySma200[i]!) {
+    return { position: "BIL" as Position, reason: "SPY is below its 200-day trend gate", cooldown: input.cooldown };
+  }
+  if (input.smh[i] < input.smhSma200[i]!) {
+    return { position: "BIL" as Position, reason: "SMH is below its 200-day trend gate", cooldown: input.cooldown };
+  }
+  if (input.soxlRsi10[i]! > 79) {
+    return { position: "BIL" as Position, reason: "SOXL is overbought, cooling down", cooldown: 2 };
+  }
+  if (input.cooldown > 0) {
+    return { position: "BIL" as Position, reason: "Cooldown after overbought SOXL signal", cooldown: input.cooldown - 1 };
+  }
+  if (input.smhVol20[i]! > 0.4) {
+    return { position: "BIL" as Position, reason: "SMH volatility is above the risk brake", cooldown: input.cooldown };
+  }
+  if (input.smhSma20[i]! > input.smhSma200[i]!) {
+    return { position: "SOXL" as Position, reason: "SMH short-term trend is above long-term trend", cooldown: input.cooldown };
+  }
+  if (input.smhRsi10[i]! < 30 && input.smh[i] > input.smhSma200[i]!) {
+    return { position: "SOXL" as Position, reason: "SMH is oversold inside an intact uptrend", cooldown: input.cooldown };
+  }
+  if (input.smh[i] > input.smhSma20[i]!) {
+    return { position: "SOXL" as Position, reason: "SMH remains above its 20-day average", cooldown: input.cooldown };
+  }
+  return { position: "BIL" as Position, reason: "No positive semiconductor setup", cooldown: input.cooldown };
+}
+
+function runCandidateC(histories: CompleteHistoryMap, initialCash: number, costBps: number): StrategyRun {
+  const aligned = alignHistories(histories, ["SMH", "SOXL"]);
+  const smhBars = aligned.barsBySymbol.SMH;
+  const soxlBars = aligned.barsBySymbol.SOXL;
+  const smhClose = closes(smhBars);
+  const smhLow = smhBars.map((bar) => bar.low);
+  const bands = bollinger(smhClose, 20, 2);
+  const smhRsi14 = rsi(smhClose, 14);
+  const smhSma200 = sma(smhClose, 200);
+  const soxlAtr14 = atr(soxlBars, 14);
+  const costRate = costBps / 10000;
+
+  let cash = initialCash;
+  let shares = 0;
+  let equity = initialCash;
+  let peak = initialCash;
+  let inPosition = false;
+  let pendingEntry = false;
+  let entryDate = "";
+  let entryPrice = 0;
+  let entryCapital = 0;
+  let stopPrice = 0;
+  let targetPrice = 0;
+  let holdDays = 0;
+  let exposureDays = 0;
+  let latestReason = "Waiting for a lower-band SMH washout";
+  let currentAllocation = "Cash";
+  const points: StrategyPoint[] = [];
+  const trades: ClosedTrade[] = [];
+
+  for (let index = 0; index < aligned.dates.length; index += 1) {
+    const today = soxlBars[index];
+    let hadExposureToday = inPosition;
+    let enteredToday = false;
+
+    if (pendingEntry && !inPosition) {
+      const entryAtr = soxlAtr14[index - 1] ?? soxlAtr14[index] ?? 0;
+      if (entryAtr > 0 && today.open > 0) {
+        entryDate = aligned.dates[index];
+        entryPrice = today.open;
+        entryCapital = cash;
+        stopPrice = Math.max(0.01, entryPrice - 1.5 * entryAtr);
+        targetPrice = entryPrice + 2 * entryAtr;
+        shares = (cash * (1 - costRate)) / entryPrice;
+        cash = 0;
+        holdDays = 0;
+        inPosition = true;
+        hadExposureToday = true;
+        enteredToday = true;
+        currentAllocation = "SOXL long";
+        latestReason = "Entered SOXL after SMH lower-band washout";
+      }
+      pendingEntry = false;
+    }
+
+    if (inPosition) {
+      const exitDecision = decideCandidateCExit({
+        index,
+        enteredToday,
+        holdDays,
+        smhClose,
+        smhRsi14,
+        middleBand: bands.middle,
+        today,
+        stopPrice,
+        targetPrice,
+      });
+
+      if (exitDecision) {
+        const proceeds = shares * exitDecision.price * (1 - costRate);
+        const tradeReturn = entryCapital > 0 ? proceeds / entryCapital - 1 : 0;
+        cash = proceeds;
+        trades.push({
+          entryDate,
+          exitDate: aligned.dates[index],
+          asset: "SOXL",
+          entryPrice,
+          exitPrice: exitDecision.price,
+          returnPct: tradeReturn,
+          days: Math.max(1, holdDays),
+          reason: exitDecision.reason,
+        });
+        shares = 0;
+        inPosition = false;
+        currentAllocation = "Cash";
+        latestReason = exitDecision.reason;
+      } else {
+        holdDays += 1;
+      }
+    }
+
+    if (hadExposureToday) exposureDays += 1;
+    equity = inPosition ? shares * today.close : cash;
+    peak = Math.max(peak, equity);
+    points.push({
+      date: aligned.dates[index],
+      equity,
+      drawdown: equity / peak - 1,
+      position: inPosition ? "SOXL" : "CASH",
+      reason: latestReason,
+      exposure: inPosition,
+    });
+
+    if (!inPosition && !pendingEntry && index < aligned.dates.length - 1) {
+      if (shouldEnterCandidateC(index, smhClose, smhLow, bands.lower, smhRsi14, smhSma200)) {
+        pendingEntry = true;
+        currentAllocation = "SOXL next open";
+        latestReason = "SMH touched lower band with RSI confirmation";
+      } else {
+        currentAllocation = "Cash";
+        latestReason = waitingReasonCandidateC(index, smhClose, bands.lower, smhRsi14, smhSma200);
+      }
+    }
+  }
+
+  return makeRun({
+    copy: STRATEGY_COPY.C,
+    points,
+    trades,
+    tradeCount: trades.length,
+    exposureDays,
+    initialCash,
+    currentAllocation,
+    latestReason,
+  });
+}
+
+function decideCandidateCExit(input: {
+  index: number;
+  enteredToday: boolean;
+  holdDays: number;
+  smhClose: number[];
+  smhRsi14: Array<number | null>;
+  middleBand: Array<number | null>;
+  today: Bar;
+  stopPrice: number;
+  targetPrice: number;
+}) {
+  const prior = input.index - 1;
+  if (!input.enteredToday && prior >= 0) {
+    const revertedToMiddle = input.middleBand[prior] != null && input.smhClose[prior] >= input.middleBand[prior]!;
+    const normalizedRsi = input.smhRsi14[prior] != null && input.smhRsi14[prior]! >= 50;
+    if (revertedToMiddle || normalizedRsi) {
+      return { price: input.today.open, reason: "Mean reversion exit at next open" };
+    }
+    if (input.holdDays >= 20) {
+      return { price: input.today.open, reason: "Time stop after 20 sessions" };
+    }
+  }
+
+  if (input.today.open <= input.stopPrice) {
+    return { price: input.today.open, reason: "Gap stop at open" };
+  }
+  if (input.today.open >= input.targetPrice) {
+    return { price: input.today.open, reason: "Gap target at open" };
+  }
+  const touchedStop = input.today.low <= input.stopPrice;
+  const touchedTarget = input.today.high >= input.targetPrice;
+  if (touchedStop) {
+    return { price: input.stopPrice, reason: touchedTarget ? "Stop-first same-day barrier" : "ATR stop" };
+  }
+  if (touchedTarget) {
+    return { price: input.targetPrice, reason: "ATR profit target" };
+  }
+  return null;
+}
+
+function shouldEnterCandidateC(
+  index: number,
+  smhClose: number[],
+  smhLow: number[],
+  lowerBand: Array<number | null>,
+  smhRsi14: Array<number | null>,
+  smhSma200: Array<number | null>,
+) {
+  if (lowerBand[index] == null || smhRsi14[index] == null || smhSma200[index] == null) return false;
+  return smhLow[index] <= lowerBand[index]! && smhRsi14[index]! <= 40 && smhClose[index] > smhSma200[index]!;
+}
+
+function waitingReasonCandidateC(
+  index: number,
+  smhClose: number[],
+  lowerBand: Array<number | null>,
+  smhRsi14: Array<number | null>,
+  smhSma200: Array<number | null>,
+) {
+  if (lowerBand[index] == null || smhRsi14[index] == null || smhSma200[index] == null) {
+    return "Indicator warmup";
+  }
+  if (smhClose[index] <= smhSma200[index]!) {
+    return "SMH is below the 200-day trend gate";
+  }
+  if (smhRsi14[index]! > 40) {
+    return "Waiting for RSI to confirm a washout";
+  }
+  return "Waiting for SMH to touch the lower Bollinger Band";
+}
+
+function makeRun(input: {
+  copy: Omit<StrategyRun, "points" | "stats" | "currentAllocation" | "latestReason" | "trades">;
+  points: StrategyPoint[];
+  trades: ClosedTrade[];
+  tradeCount: number;
+  exposureDays: number;
+  initialCash: number;
+  currentAllocation: string;
+  latestReason: string;
+}): StrategyRun {
+  const stats = summarizeStats(
+    input.points,
+    input.initialCash,
+    input.tradeCount,
+    input.exposureDays,
+    input.trades,
+  );
+  return {
+    ...input.copy,
+    points: input.points,
+    stats,
+    trades: input.trades,
+    currentAllocation: input.currentAllocation,
+    latestReason: input.latestReason,
+  };
+}
+
+function summarizeStats(
+  points: StrategyPoint[],
+  initialCash: number,
+  trades: number,
+  exposureDays: number,
+  closedTrades: ClosedTrade[],
+): StrategyStats {
+  const first = points[0];
+  const last = points.at(-1) ?? first;
+  const returns = points.slice(1).map((point, index) => point.equity / points[index].equity - 1).filter(Number.isFinite);
+  const years = Math.max(1 / 252, calendarYears(first.date, last.date));
+  const finalEquity = last.equity;
+  const averageReturn = mean(returns);
+  const volatility = standardDeviation(returns);
+  const winningTrades = closedTrades.filter((trade) => trade.returnPct > 0).length;
+
+  return {
+    cagr: Math.pow(finalEquity / initialCash, 1 / years) - 1,
+    totalReturn: finalEquity / initialCash - 1,
+    maxDrawdown: Math.min(...points.map((point) => point.drawdown)),
+    sharpe: volatility === 0 ? 0 : (averageReturn / volatility) * Math.sqrt(252),
+    trades,
+    exposure: points.length === 0 ? 0 : exposureDays / points.length,
+    finalEquity,
+    testedYears: years,
+    startDate: first.date,
+    endDate: last.date,
+    winRate: closedTrades.length === 0 ? null : winningTrades / closedTrades.length,
+  };
+}
+
+function alignHistories(histories: CompleteHistoryMap, symbols: SymbolKey[]) {
+  const maps = Object.fromEntries(
+    symbols.map((symbol) => [symbol, new Map(histories[symbol].map((bar) => [bar.date, bar]))]),
+  ) as Record<SymbolKey, Map<string, Bar>>;
+  const dates = [...maps[symbols[0]].keys()]
+    .filter((date) => symbols.every((symbol) => maps[symbol].has(date)))
+    .sort();
+  const barsBySymbol = Object.fromEntries(
+    symbols.map((symbol) => [symbol, dates.map((date) => maps[symbol].get(date)!).filter(Boolean)]),
+  ) as Record<SymbolKey, Bar[]>;
+  return { dates, barsBySymbol };
+}
+
+function closes(bars: Bar[]) {
+  return bars.map((bar) => bar.close);
+}
+
+function sma(values: number[], period: number) {
+  const output = Array<number | null>(values.length).fill(null);
+  let sum = 0;
+  for (let index = 0; index < values.length; index += 1) {
+    sum += values[index];
+    if (index >= period) sum -= values[index - period];
+    if (index >= period - 1) output[index] = sum / period;
+  }
+  return output;
+}
+
+function rsi(values: number[], period: number) {
+  const output = Array<number | null>(values.length).fill(null);
+  if (values.length <= period) return output;
+  let gain = 0;
+  let loss = 0;
+  for (let index = 1; index <= period; index += 1) {
+    const change = values[index] - values[index - 1];
+    if (change >= 0) gain += change;
+    else loss -= change;
+  }
+  let averageGain = gain / period;
+  let averageLoss = loss / period;
+  output[period] = rsiFromAverages(averageGain, averageLoss);
+
+  for (let index = period + 1; index < values.length; index += 1) {
+    const change = values[index] - values[index - 1];
+    averageGain = (averageGain * (period - 1) + Math.max(change, 0)) / period;
+    averageLoss = (averageLoss * (period - 1) + Math.max(-change, 0)) / period;
+    output[index] = rsiFromAverages(averageGain, averageLoss);
+  }
+  return output;
+}
+
+function rsiFromAverages(averageGain: number, averageLoss: number) {
+  if (averageLoss === 0) return 100;
+  const relativeStrength = averageGain / averageLoss;
+  return 100 - 100 / (1 + relativeStrength);
+}
+
+function realizedVol(values: number[], period: number) {
+  const output = Array<number | null>(values.length).fill(null);
+  for (let index = period; index < values.length; index += 1) {
+    const returns: number[] = [];
+    for (let lookback = index - period + 1; lookback <= index; lookback += 1) {
+      returns.push(Math.log(values[lookback] / values[lookback - 1]));
+    }
+    output[index] = standardDeviation(returns) * Math.sqrt(252);
+  }
+  return output;
+}
+
+function bollinger(values: number[], period: number, deviations: number) {
+  const middle = Array<number | null>(values.length).fill(null);
+  const upper = Array<number | null>(values.length).fill(null);
+  const lower = Array<number | null>(values.length).fill(null);
+  let sum = 0;
+  let sumSquares = 0;
+
+  for (let index = 0; index < values.length; index += 1) {
+    sum += values[index];
+    sumSquares += values[index] * values[index];
+    if (index >= period) {
+      sum -= values[index - period];
+      sumSquares -= values[index - period] * values[index - period];
+    }
+    if (index >= period - 1) {
+      const average = sum / period;
+      const variance = Math.max(0, sumSquares / period - average * average);
+      const bandWidth = Math.sqrt(variance) * deviations;
+      middle[index] = average;
+      upper[index] = average + bandWidth;
+      lower[index] = average - bandWidth;
+    }
+  }
+  return { middle, upper, lower };
+}
+
+function atr(bars: Bar[], period: number) {
+  const trueRanges = bars.map((bar, index) => {
+    if (index === 0) return bar.high - bar.low;
+    const previousClose = bars[index - 1].close;
+    return Math.max(
+      bar.high - bar.low,
+      Math.abs(bar.high - previousClose),
+      Math.abs(bar.low - previousClose),
+    );
+  });
+  return sma(trueRanges, period);
+}
+
+function EquityChart({ points, label }: { points: StrategyPoint[]; label: string }) {
+  const sampled = samplePoints(points, 180);
+  if (sampled.length < 2) {
+    return <div className="empty-chart">Chart loads after live data arrives.</div>;
+  }
+  const values = sampled.map((point) => point.equity);
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const path = values
-    .map((value, index) => {
-      const x = (index / Math.max(values.length - 1, 1)) * width;
-      const y = scale(value, min, max, height - 3, 3);
-      return `${index === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
-    })
-    .join(" ");
+  const range = Math.max(1, max - min);
+  const width = 900;
+  const height = 280;
+  const path = sampled.map((point, index) => {
+    const x = (index / (sampled.length - 1)) * width;
+    const y = height - ((point.equity - min) / range) * height;
+    return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+  }).join(" ");
+
   return (
-    <svg className={`mini-sparkline ${tone}`} viewBox={`0 0 ${width} ${height}`} aria-label="Equity sparkline" role="img">
-      <path d={path} fill="none" strokeWidth="2.25" />
+    <svg className="equity-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${label} equity curve`}>
+      <line x1="0" x2={width} y1={height - 1} y2={height - 1} />
+      <line x1="0" x2={width} y1="1" y2="1" />
+      <path d={path} />
     </svg>
   );
 }
 
-function NumberField({
-  label,
-  value,
-  min,
-  max,
-  step = 1,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  onChange: (value: number) => void;
-}) {
+function MetricCard({ label, value, tone }: { label: string; value: string; tone: "positive" | "warning" | "calm" | "neutral" }) {
   return (
-    <label className="field-label">
-      {label}
-      <input
-        className="text-input mt-1"
-        max={max}
-        min={min}
-        onChange={(event) => onChange(Number(event.target.value))}
-        step={step}
-        type="number"
-        value={value}
-      />
-    </label>
-  );
-}
-
-function RunNote({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="run-note">
+    <article className={`metric ${tone}`}>
       <span>{label}</span>
-      <p>{value}</p>
-    </div>
+      <strong>{value}</strong>
+    </article>
   );
 }
 
-function StrategyChart({ points }: { points: BacktestPoint[] }) {
-  if (points.length < 2) {
-    return <div className="chart-empty">Load an ETF to render the backtest.</div>;
-  }
-  const width = 860;
-  const height = 420;
-  const pad = 26;
-  const equityValues = points.map((point) => point.equity);
-  const priceValues = points.map((point) => point.close);
-  const equityMin = Math.min(...equityValues);
-  const equityMax = Math.max(...equityValues);
-  const priceMin = Math.min(...priceValues);
-  const priceMax = Math.max(...priceValues);
-  const x = (index: number) => pad + (index / Math.max(points.length - 1, 1)) * (width - pad * 2);
-  const yEquity = (value: number) => scale(value, equityMin, equityMax, height - pad, pad);
-  const yPrice = (value: number) => scale(value, priceMin, priceMax, height - pad, pad);
-  const equityPath = points.map((point, index) => `${index === 0 ? "M" : "L"} ${x(index)} ${yEquity(point.equity)}`).join(" ");
-  const pricePath = points.map((point, index) => `${index === 0 ? "M" : "L"} ${x(index)} ${yPrice(point.close)}`).join(" ");
-  const signalPoints = points
-    .map((point, index) => ({ point, index }))
-    .filter(({ point }) => point.signal === "bullish" || point.signal === "bearish")
-    .slice(-80);
-
-  return (
-    <div className="chart-shell">
-      <svg aria-label="Backtest equity and ETF price chart" viewBox={`0 0 ${width} ${height}`} role="img">
-        <rect width={width} height={height} rx="8" fill="#fffdf8" />
-        {[0, 1, 2, 3].map((line) => (
-          <line
-            key={line}
-            x1={pad}
-            x2={width - pad}
-            y1={pad + line * ((height - pad * 2) / 3)}
-            y2={pad + line * ((height - pad * 2) / 3)}
-            stroke="#e4dccf"
-            strokeWidth="1"
-          />
-        ))}
-        <path d={pricePath} fill="none" stroke="#78909c" strokeOpacity="0.45" strokeWidth="2" />
-        <path d={equityPath} fill="none" stroke="#236c6f" strokeWidth="3" />
-        {signalPoints.map(({ point, index }) => (
-          <circle
-            cx={x(index)}
-            cy={yEquity(point.equity)}
-            fill={point.signal === "bullish" ? "#2f7d55" : "#b14b3b"}
-            key={`${point.date}-${point.signal}-${index}`}
-            r="4"
-          />
-        ))}
-      </svg>
-      <div className="chart-legend">
-        <span><i className="legend equity" /> Equity</span>
-        <span><i className="legend price" /> ETF price</span>
-        <span><i className="legend bullish" /> Bullish</span>
-        <span><i className="legend bearish" /> Bearish</span>
-      </div>
-    </div>
-  );
+function samplePoints(points: StrategyPoint[], target: number) {
+  if (points.length <= target) return points;
+  const step = Math.ceil(points.length / target);
+  return points.filter((_, index) => index % step === 0 || index === points.length - 1);
 }
 
-function runBacktest(bars: Bar[], settings: typeof DEFAULT_SETTINGS): BacktestResult {
-  if (bars.length < Math.max(settings.bbPeriod, settings.rsiPeriod) + 2) {
-    return emptyResult(settings.initialCash);
-  }
-
-  const startDate = bars[0]?.date ?? null;
-  const endDate = bars.at(-1)?.date ?? null;
-  const testedYears = calendarYearsBetween(startDate, endDate) || (bars.length - 1) / 252;
-  const closes = bars.map((bar) => bar.close);
-  const bands = bollingerBands(closes, settings.bbPeriod, settings.bbDeviations);
-  const rsiValues = rsiWilder(closes, settings.rsiPeriod);
-  let equity = settings.initialCash;
-  let peak = equity;
-  let maxDrawdown = 0;
-  let position = 0;
-  let trades = 0;
-  let activeDays = 0;
-  const returns: number[] = [];
-  const points: BacktestPoint[] = [];
-
-  for (let index = 0; index < bars.length; index += 1) {
-    const bar = bars[index];
-    const band = bands[index];
-    const rsi = rsiValues[index];
-    const signal = classifySignal(bar, band, rsi, settings);
-    const reason = signalReason(signal, band, rsi, settings);
-
-    if (index > 0) {
-      const previous = bars[index - 1];
-      const dailyReturn = (bar.close / previous.close) - 1;
-      const strategyReturn = position * dailyReturn;
-      equity *= 1 + strategyReturn;
-      returns.push(strategyReturn);
-      if (position !== 0) activeDays += 1;
-      peak = Math.max(peak, equity);
-      maxDrawdown = Math.min(maxDrawdown, equity / peak - 1);
-    }
-
-    points.push({
-      date: bar.date,
-      close: bar.close,
-      equity,
-      position,
-      signal,
-      rsi,
-      upper: band?.upper ?? null,
-      lower: band?.lower ?? null,
-      reason,
-    });
-
-    const nextPosition = nextPositionForSignal(signal, position, settings.mode);
-    if (nextPosition !== position && signal !== "warmup") {
-      trades += 1;
-      position = nextPosition;
-    }
-  }
-
-  const years = testedYears || returns.length / 252;
-  const cagr = years > 0 ? (equity / settings.initialCash) ** (1 / years) - 1 : 0;
-  const signalPoints = points.filter((point) => point.signal === "bullish" || point.signal === "bearish");
-  const buyHoldReturn = (bars.at(-1)?.close ?? 0) / (bars[0]?.close ?? 1) - 1;
-  const buyHoldCagr = years > 0 ? (1 + buyHoldReturn) ** (1 / years) - 1 : 0;
-  const buyHoldMaxDrawdown = maxDrawdownForValues(closes);
-  const totalReturn = equity / settings.initialCash - 1;
-
-  return {
-    points,
-    startDate,
-    endDate,
-    tradingDays: returns.length,
-    testedYears,
-    finalEquity: equity,
-    cagr,
-    sharpe: annualizedSharpe(returns),
-    maxDrawdown,
-    totalReturn,
-    buyHoldReturn,
-    buyHoldCagr,
-    buyHoldMaxDrawdown,
-    alphaVsBuyHold: totalReturn - buyHoldReturn,
-    trades,
-    exposure: returns.length ? activeDays / returns.length : 0,
-    latestSignal: signalPoints.at(-1) ?? points.at(-1) ?? null,
-    signalCount: signalPoints.length,
-  };
+function hasCompleteHistories(histories: HistoryMap): histories is CompleteHistoryMap {
+  return REQUIRED_SYMBOLS.every((symbol) => Array.isArray(histories[symbol]) && histories[symbol]!.length > 250);
 }
 
-function emptyResult(initialCash: number): BacktestResult {
-  return {
-    points: [],
-    startDate: null,
-    endDate: null,
-    tradingDays: 0,
-    testedYears: 0,
-    finalEquity: initialCash,
-    cagr: 0,
-    sharpe: 0,
-    maxDrawdown: 0,
-    totalReturn: 0,
-    buyHoldReturn: 0,
-    buyHoldCagr: 0,
-    buyHoldMaxDrawdown: 0,
-    alphaVsBuyHold: 0,
-    trades: 0,
-    exposure: 0,
-    latestSignal: null,
-    signalCount: 0,
-  };
+function maxBy<T>(items: T[], scorer: (item: T) => number) {
+  return items.reduce<T | null>((best, item) => {
+    if (!best) return item;
+    return scorer(item) > scorer(best) ? item : best;
+  }, null);
 }
 
-function synthesizeStrategy(result: BacktestResult): StrategySynthesis {
-  if (result.points.length < 2) {
-    return {
-      score: 0,
-      grade: "No run",
-      tone: "empty",
-      verdict: "Run an ETF to synthesize this strategy.",
-      edge: "No price history has been loaded yet.",
-      risk: "Drawdown and volatility are unavailable.",
-      activity: "Signals will appear after the first completed run.",
-      driver: "No backtest yet.",
-    };
-  }
-
-  const tradesPerYear = result.points.length > 1 ? result.trades / ((result.points.length - 1) / 252) : 0;
-  const sharpeScore = clamp((result.sharpe - 0.25) / 0.75, 0, 1);
-  const returnScore =
-    0.6 * clamp((result.cagr - 0.02) / 0.08, 0, 1) +
-    0.4 * clamp((result.cagr - result.buyHoldCagr + 0.02) / 0.07, 0, 1);
-  const drawdownScore =
-    0.6 * clamp((0.35 - Math.abs(result.maxDrawdown)) / 0.25, 0, 1) +
-    0.4 * clamp((Math.abs(result.buyHoldMaxDrawdown) - Math.abs(result.maxDrawdown)) / 0.2, 0, 1);
-  const activityScore = activityScoreFor(tradesPerYear, result.exposure);
-  const currentSignalScore = currentSignalScoreFor(result.latestSignal, result.points.at(-1)?.date);
-  const rawScore = Math.round(
-    100 *
-      (
-        0.3 * sharpeScore +
-        0.25 * returnScore +
-        0.25 * drawdownScore +
-        0.1 * activityScore +
-        0.1 * currentSignalScore
-      ),
-  );
-  const score = Math.min(
-    rawScore,
-    result.cagr <= 0 ? 44 : result.alphaVsBuyHold < 0 ? 68 : Math.abs(result.maxDrawdown) > 0.4 ? 44 : 100,
-  );
-  const insufficient = result.points.length < 252 || result.signalCount < 3;
-  const hasClearEdge = result.cagr > 0 && result.alphaVsBuyHold >= 0;
-  const tone = insufficient ? "mixed" : score >= 75 && hasClearEdge ? "strong" : score >= 60 ? "good" : score >= 45 ? "mixed" : "weak";
-  const grade = insufficient
-    ? "Thin data"
-    : score >= 75 && hasClearEdge
-      ? "Strong edge"
-    : score >= 60
-        ? "Tradable"
-        : score >= 45
-          ? "Watchlist"
-          : "Reject";
-  const latestSignal = signalLabel(result.latestSignal?.signal).toLowerCase();
-  const verdict =
-    insufficient
-      ? "There is not enough signal history yet; treat this as provisional."
-      : score >= 75 && hasClearEdge
-      ? "The mean-reversion rules have shown a strong historical fit here."
-      : score >= 60
-        ? result.alphaVsBuyHold < 0
-          ? "The rules are risk-adjusted tradable, but still lag buy-and-hold in this window."
-          : "The rules look usable, with a positive but selective profile."
-        : score >= 45
-          ? "The rules are mixed; inspect risk and signal timing before trusting it."
-          : "The rules have not shown enough edge for this ETF in the selected window.";
-
-  return {
-    score,
-    grade,
-    tone,
-    verdict,
-    edge: `${percent(result.cagr)} CAGR vs ${percent(result.buyHoldCagr)} buy-and-hold CAGR; ${percent(result.cagr - result.buyHoldCagr)} annualized difference.`,
-    risk: `${percent(result.maxDrawdown)} strategy max drawdown vs ${percent(result.buyHoldMaxDrawdown)} buy-and-hold; Sharpe ${number(result.sharpe)}.`,
-    activity: `${result.testedYears.toFixed(1)} tested years, ${tradesPerYear.toFixed(1)} trades/year, ${result.signalCount} signals, ${percent(result.exposure)} exposure; latest signal is ${latestSignal}.`,
-    driver: `${result.startDate ?? "Start"} · CAGR ${percent(result.cagr)} vs hold ${percent(result.buyHoldCagr)} · Worst drop ${percent(result.maxDrawdown)}`,
-  };
+function mean(values: number[]) {
+  if (values.length === 0) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function classifySignal(
-  bar: Bar,
-  band: { upper: number; lower: number } | null,
-  rsi: number | null,
-  settings: typeof DEFAULT_SETTINGS,
-): Signal {
-  if (!band || rsi === null) return "warmup";
-  if (bar.high >= band.upper && rsi > settings.overbought) return "bearish";
-  if (bar.low <= band.lower && rsi < settings.oversold) return "bullish";
-  return "neutral";
+function standardDeviation(values: number[]) {
+  if (values.length < 2) return 0;
+  const average = mean(values);
+  const variance = values.reduce((sum, value) => sum + (value - average) ** 2, 0) / (values.length - 1);
+  return Math.sqrt(variance);
 }
 
-function signalReason(
-  signal: Signal,
-  band: { upper: number; lower: number } | null,
-  rsi: number | null,
-  settings: typeof DEFAULT_SETTINGS,
-) {
-  if (signal === "warmup") return "insufficient indicator history";
-  if (signal === "bearish") return `high touched upper band and RSI ${rsi?.toFixed(1)} > ${settings.overbought}`;
-  if (signal === "bullish") return `low touched lower band and RSI ${rsi?.toFixed(1)} < ${settings.oversold}`;
-  if (!band || rsi === null) return "neutral";
-  return "no touch-plus-RSI confirmation";
+function calendarYears(start: string, end: string) {
+  return (Date.parse(`${end}T00:00:00.000Z`) - Date.parse(`${start}T00:00:00.000Z`)) / (365.25 * 24 * 60 * 60 * 1000);
 }
 
-function nextPositionForSignal(signal: Signal, current: number, mode: string) {
-  if (signal === "bullish") return 1;
-  if (signal === "bearish") return mode === "long-short" ? -1 : 0;
-  return current;
+function clampNumber(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.round(value)));
 }
 
-function bollingerBands(values: number[], period: number, deviations: number) {
-  return values.map((_, index) => {
-    if (index < period - 1) return null;
-    const window = values.slice(index - period + 1, index + 1);
-    const mean = window.reduce((sum, value) => sum + value, 0) / period;
-    const variance = window.reduce((sum, value) => sum + (value - mean) ** 2, 0) / period;
-    const stdev = Math.sqrt(variance);
-    return {
-      upper: mean + deviations * stdev,
-      lower: mean - deviations * stdev,
-    };
-  });
+function formatPercent(value: number) {
+  return `${(value * 100).toFixed(2)}%`;
 }
 
-function rsiWilder(values: number[], period: number) {
-  const result: Array<number | null> = Array(values.length).fill(null);
-  if (values.length <= period) return result;
-  let avgGain = 0;
-  let avgLoss = 0;
-  for (let index = 1; index <= period; index += 1) {
-    const change = values[index] - values[index - 1];
-    avgGain += Math.max(change, 0);
-    avgLoss += Math.max(-change, 0);
-  }
-  avgGain /= period;
-  avgLoss /= period;
-  result[period] = rsiFromAverages(avgGain, avgLoss);
-  for (let index = period + 1; index < values.length; index += 1) {
-    const change = values[index] - values[index - 1];
-    avgGain = (avgGain * (period - 1) + Math.max(change, 0)) / period;
-    avgLoss = (avgLoss * (period - 1) + Math.max(-change, 0)) / period;
-    result[index] = rsiFromAverages(avgGain, avgLoss);
-  }
-  return result;
-}
-
-function rsiFromAverages(avgGain: number, avgLoss: number) {
-  if (avgGain === 0 && avgLoss === 0) return 50;
-  if (avgLoss === 0) return 100;
-  if (avgGain === 0) return 0;
-  const relativeStrength = avgGain / avgLoss;
-  return 100 - 100 / (1 + relativeStrength);
-}
-
-function annualizedSharpe(returns: number[]) {
-  if (returns.length < 2) return 0;
-  const mean = returns.reduce((sum, value) => sum + value, 0) / returns.length;
-  const variance = returns.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (returns.length - 1);
-  return variance === 0 ? 0 : (mean / Math.sqrt(variance)) * Math.sqrt(252);
-}
-
-function maxDrawdownForValues(values: number[]) {
-  if (!values.length) return 0;
-  let peak = values[0];
-  let drawdown = 0;
-  for (const value of values) {
-    peak = Math.max(peak, value);
-    drawdown = Math.min(drawdown, value / peak - 1);
-  }
-  return drawdown;
-}
-
-function activityScoreFor(tradesPerYear: number, exposure: number) {
-  const tradeScore =
-    tradesPerYear >= 1 && tradesPerYear <= 12
-      ? 1
-      : tradesPerYear < 1
-        ? clamp(tradesPerYear, 0, 1)
-        : clamp(1 - (tradesPerYear - 12) / 24, 0, 1);
-  const exposureScore =
-    exposure >= 0.1 && exposure <= 0.8
-      ? 1
-      : exposure < 0.1
-        ? clamp(exposure / 0.1, 0, 1)
-        : clamp(1 - (exposure - 0.8) / 0.2, 0, 1);
-  return (tradeScore + exposureScore) / 2;
-}
-
-function currentSignalScoreFor(latestSignal: BacktestPoint | null, latestDate?: string) {
-  if (!latestSignal || !latestDate) return 0.2;
-  if (latestSignal.signal === "neutral") return 0.6;
-  if (latestSignal.signal === "warmup") return 0.2;
-  const latestTime = Date.parse(latestDate);
-  const signalTime = Date.parse(latestSignal.date);
-  if (!Number.isFinite(latestTime) || !Number.isFinite(signalTime)) return 0.6;
-  const daysOld = (latestTime - signalTime) / (24 * 60 * 60 * 1000);
-  return daysOld <= 14 ? 1 : daysOld <= 45 ? 0.6 : 0.35;
-}
-
-function calendarYearsBetween(startDate: string | null, endDate: string | null) {
-  if (!startDate || !endDate) return 0;
-  const start = Date.parse(`${startDate}T00:00:00.000Z`);
-  const end = Date.parse(`${endDate}T00:00:00.000Z`);
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
-  return (end - start) / (365.25 * 24 * 60 * 60 * 1000);
-}
-
-function rangeCopy(range: string) {
-  if (range === "max" || range === "inception") return "since inception";
-  return `over ${range.toUpperCase()}`;
-}
-
-function runWindowLabel(result: BacktestResult) {
-  if (!result.startDate || !result.endDate || !result.testedYears) return "Not loaded";
-  return `${result.testedYears.toFixed(1)} yrs · ${result.startDate} to ${result.endDate}`;
-}
-
-function scale(value: number, min: number, max: number, outputMax: number, outputMin: number) {
-  if (max === min) return (outputMin + outputMax) / 2;
-  return outputMax - ((value - min) / (max - min)) * (outputMax - outputMin);
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function statusLabel(status?: CachedRun["status"]) {
-  if (status === "loading") return "Loading";
-  if (status === "error") return "Error";
-  return "Not run";
-}
-
-function signalLabel(signal?: Signal) {
-  if (signal === "bullish") return "Bullish";
-  if (signal === "bearish") return "Bearish";
-  if (signal === "warmup") return "Warmup";
-  if (signal === "neutral") return "Neutral";
-  return "None";
-}
-
-function currency(value: number) {
+function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
-  }).format(value || 0);
+  }).format(value);
 }
 
-function percent(value: number) {
-  return `${((value || 0) * 100).toFixed(1)}%`;
-}
-
-function number(value: number) {
-  return Number.isFinite(value) ? value.toFixed(2) : "0.00";
+function formatNumber(value: number, decimals: number) {
+  return value.toFixed(decimals);
 }

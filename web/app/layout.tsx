@@ -13,15 +13,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ETF Inception Backtester",
-  description: "Live ETF Bollinger Band and RSI mean-reversion backtests from each ETF's first available daily price.",
+  title: "ABC Strategy Lab",
+  description: "Live inception backtests for the TQQQ, SOXL, and explicit mean-reversion ABC strategy candidates.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "ETF Inception Backtester",
-    description: "Live ETF Bollinger Band and RSI mean-reversion backtests from each ETF's first available daily price.",
+    title: "ABC Strategy Lab",
+    description: "Live inception backtests for the TQQQ, SOXL, and explicit mean-reversion ABC strategy candidates.",
     type: "website",
   },
 };

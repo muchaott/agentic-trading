@@ -29,13 +29,13 @@ test("server-renders the ETF strategy dashboard", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>ETF Inception Backtester<\/title>/i);
-  assert.match(html, /Strategy 2: ETF Inception Backtester/);
-  assert.match(html, /Since inception/);
-  assert.match(html, /ETF universe/);
-  assert.match(html, /Signal Log/);
-  assert.match(html, /Run Notes/);
-  assert.match(html, /SPDR S&amp;P 500 ETF Trust/);
+  assert.match(html, /<title>ABC Strategy Lab<\/title>/i);
+  assert.match(html, /Live inception backtests for the three candidate strategies/);
+  assert.match(html, /Candidate A/);
+  assert.match(html, /Candidate B/);
+  assert.match(html, /Candidate C/);
+  assert.match(html, /Archived Strategy 2/);
+  assert.match(html, /Current allocation/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
@@ -46,9 +46,10 @@ test("keeps the finished app free of starter preview wiring", async () => {
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
 
-  assert.match(page, /runBacktest/);
-  assert.match(page, /classifySignal/);
-  assert.match(layout, /ETF Inception Backtester/);
+  assert.match(page, /runCandidateA/);
+  assert.match(page, /runCandidateB/);
+  assert.match(page, /runCandidateC/);
+  assert.match(layout, /ABC Strategy Lab/);
   assert.doesNotMatch(page, /_sites-preview|SkeletonPreview|codex-preview/i);
   assert.doesNotMatch(layout, /Starter Project|codex-preview|_sites-preview/i);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
