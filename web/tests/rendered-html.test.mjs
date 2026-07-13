@@ -51,7 +51,10 @@ test("keeps the finished app free of starter preview wiring", async () => {
   assert.match(page, /runCandidateB/);
   assert.match(page, /runCandidateC/);
   assert.match(page, /analyzeEntryTiming/);
+  assert.match(page, /InteractiveBacktestChart/);
+  assert.match(page, /chartRange/);
   assert.match(page, /Bad Timing Stress Test/);
+  assert.match(page, /Worst start path/);
   assert.match(layout, /ABC Strategy Lab/);
   assert.doesNotMatch(page, /_sites-preview|SkeletonPreview|codex-preview/i);
   assert.doesNotMatch(layout, /Starter Project|codex-preview|_sites-preview/i);

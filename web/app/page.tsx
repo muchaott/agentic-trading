@@ -14,6 +14,8 @@ type Bar = {
 type SymbolKey = "SPY" | "QQQ" | "TQQQ" | "BIL" | "SMH" | "SOXL";
 type StrategyId = "A" | "B" | "C";
 type Position = "BIL" | "TQQQ" | "SOXL" | "CASH";
+type ChartView = "equity" | "drawdown" | "cohort";
+type ChartRange = "all" | "10y" | "5y" | "3y" | "1y";
 
 type StrategyPoint = {
   date: string;
@@ -75,6 +77,10 @@ type EntryStressTest = {
   tone: "positive" | "warning" | "danger" | "neutral";
 };
 
+type ChartPoint = StrategyPoint & {
+  value: number;
+};
+
 type StrategyRun = {
   id: StrategyId;
   title: string;
@@ -101,6 +107,24 @@ const REQUIRED_SYMBOLS: SymbolKey[] = ["SPY", "QQQ", "TQQQ", "BIL", "SMH", "SOXL
 const INITIAL_CASH = 100000;
 const DEFAULT_COST_BPS = 0;
 const MIN_ENTRY_FOLLOW_THROUGH_DAYS = 252;
+const CHART_VIEW_OPTIONS: Array<{ value: ChartView; label: string }> = [
+  { value: "equity", label: "Equity" },
+  { value: "drawdown", label: "Drawdown" },
+  { value: "cohort", label: "Worst start path" },
+];
+const CHART_RANGE_OPTIONS: Array<{ value: ChartRange; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "10y", label: "10Y" },
+  { value: "5y", label: "5Y" },
+  { value: "3y", label: "3Y" },
+  { value: "1y", label: "1Y" },
+];
+const RANGE_TO_TRADING_DAYS: Record<Exclude<ChartRange, "all">, number> = {
+  "10y": 2520,
+  "5y": 1260,
+  "3y": 756,
+  "1y": 252,
+};
 
 const STRATEGY_COPY: Record<StrategyId, Omit<StrategyRun, "points" | "stats" | "currentAllocation" | "latestReason" | "trades" | "entryStress">> = {
   A: {
@@ -192,6 +216,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [initialCash, setInitialCash] = useState(INITIAL_CASH);
   const [costBps, setCostBps] = useState(DEFAULT_COST_BPS);
+  const [chartView, setChartView] = useState<ChartView>("equity");
+  const [chartRange, setChartRange] = useState<ChartRange>("all");
+  const [selectedCohortStart, setSelectedCohortStart] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -228,6 +255,14 @@ export default function Home() {
     const dates = REQUIRED_SYMBOLS.flatMap((symbol) => histories[symbol]?.at(-1)?.date ?? []);
     return dates.sort().at(-1) ?? "latest close";
   }, [histories]);
+
+  const selectedCohort = useMemo(() => {
+    if (!selectedRun) return null;
+    return (
+      selectedRun.entryStress.cohorts.find((cohort) => cohort.startDate === selectedCohortStart) ??
+      selectedRun.entryStress.worstByLoss
+    );
+  }, [selectedRun, selectedCohortStart]);
 
   async function loadHistories(signal?: AbortSignal) {
     setIsLoading(true);
@@ -329,7 +364,11 @@ export default function Home() {
               className={`strategy-card ${selectedId === id ? "selected" : ""}`}
               key={id}
               type="button"
-              onClick={() => setSelectedId(id)}
+              onClick={() => {
+                setSelectedId(id);
+                setSelectedCohortStart(null);
+                setChartView("equity");
+              }}
             >
               <span>{copy.label}</span>
               <strong>{copy.title}</strong>
@@ -394,17 +433,51 @@ export default function Home() {
           <div className="chart-panel">
             <div className="chart-title">
               <div>
-                <span>Equity curve</span>
+                <span>{chartTitle(chartView)}</span>
                 <strong>
-                  {selectedRun.stats.startDate} to {selectedRun.stats.endDate}
+                  {chartSubtitle(selectedRun, chartView, chartRange, selectedCohort)}
                 </strong>
               </div>
               <div>
-                <span>Total return</span>
-                <strong>{formatPercent(selectedRun.stats.totalReturn)}</strong>
+                <span>{chartView === "cohort" ? "Selected start" : "Total return"}</span>
+                <strong>{chartView === "cohort" ? selectedCohort?.startDate ?? "N/A" : formatPercent(selectedRun.stats.totalReturn)}</strong>
               </div>
             </div>
-            <EquityChart points={selectedRun.points} label={selectedRun.title} />
+            <div className="chart-controls" aria-label="Interactive chart controls">
+              <div className="segmented-control" role="group" aria-label="Chart view">
+                {CHART_VIEW_OPTIONS.map((option) => (
+                  <button
+                    className={`control-chip ${chartView === option.value ? "active" : ""}`}
+                    disabled={option.value === "cohort" && !selectedCohort}
+                    key={option.value}
+                    type="button"
+                    onClick={() => setChartView(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <div className="segmented-control" role="group" aria-label="Chart range">
+                {CHART_RANGE_OPTIONS.map((option) => (
+                  <button
+                    className={`control-chip ${chartRange === option.value ? "active" : ""}`}
+                    disabled={chartView === "cohort"}
+                    key={option.value}
+                    type="button"
+                    onClick={() => setChartRange(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <InteractiveBacktestChart
+              cohort={selectedCohort}
+              label={selectedRun.title}
+              points={selectedRun.points}
+              range={chartRange}
+              view={chartView}
+            />
           </div>
 
           <section className="stress-panel">
@@ -463,8 +536,19 @@ export default function Home() {
                 </thead>
                 <tbody>
                   {selectedRun.entryStress.cohorts.slice(0, 6).map((cohort) => (
-                    <tr key={`${selectedRun.id}-${cohort.startDate}`}>
-                      <td>{cohort.startDate}</td>
+                    <tr className={selectedCohort?.startDate === cohort.startDate ? "selected-row" : ""} key={`${selectedRun.id}-${cohort.startDate}`}>
+                      <td>
+                        <button
+                          className="table-button"
+                          type="button"
+                          onClick={() => {
+                            setSelectedCohortStart(cohort.startDate);
+                            setChartView("cohort");
+                          }}
+                        >
+                          {cohort.startDate}
+                        </button>
+                      </td>
                       <td>{formatPercent(cohort.minLoss)}</td>
                       <td>{cohort.troughDate}</td>
                       <td>{cohort.recoveryDate ?? "Not recovered"}</td>
@@ -1346,29 +1430,84 @@ function atr(bars: Bar[], period: number) {
   return sma(trueRanges, period);
 }
 
-function EquityChart({ points, label }: { points: StrategyPoint[]; label: string }) {
-  const sampled = samplePoints(points, 180);
-  if (sampled.length < 2) {
+function InteractiveBacktestChart({
+  points,
+  label,
+  view,
+  range,
+  cohort,
+}: {
+  points: StrategyPoint[];
+  label: string;
+  view: ChartView;
+  range: ChartRange;
+  cohort: EntryCohort | null;
+}) {
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const visiblePoints = chartPoints(points, view, range, cohort);
+  if (visiblePoints.length < 2) {
     return <div className="empty-chart">Chart loads after live data arrives.</div>;
   }
-  const values = sampled.map((point) => point.equity);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = Math.max(1, max - min);
+
+  const values = visiblePoints.map((point) => point.value);
+  const min = chartMin(values, view);
+  const max = chartMax(values, view);
+  const valueRange = Math.max(0.0001, max - min);
   const width = 900;
   const height = 280;
-  const path = sampled.map((point, index) => {
-    const x = (index / (sampled.length - 1)) * width;
-    const y = height - ((point.equity - min) / range) * height;
+
+  const path = visiblePoints.map((point, index) => {
+    const x = (index / (visiblePoints.length - 1)) * width;
+    const y = height - ((point.value - min) / valueRange) * height;
     return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
   }).join(" ");
+  const baselineValue = view === "cohort" ? 100 : view === "drawdown" ? 0 : null;
+  const baselineY = baselineValue == null ? null : height - ((baselineValue - min) / valueRange) * height;
+  const hoverPoint = hoverIndex == null ? null : visiblePoints[hoverIndex] ?? null;
+  const hoverX = hoverIndex == null ? 0 : (hoverIndex / (visiblePoints.length - 1)) * width;
+  const hoverY = hoverPoint == null ? 0 : height - ((hoverPoint.value - min) / valueRange) * height;
+
+  function updateHover(clientX: number, currentTarget: SVGSVGElement) {
+    const rect = currentTarget.getBoundingClientRect();
+    const ratio = clamp((clientX - rect.left) / rect.width, 0, 1);
+    setHoverIndex(Math.round(ratio * (visiblePoints.length - 1)));
+  }
 
   return (
-    <svg className="equity-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${label} equity curve`}>
-      <line x1="0" x2={width} y1={height - 1} y2={height - 1} />
-      <line x1="0" x2={width} y1="1" y2="1" />
-      <path d={path} />
-    </svg>
+    <div className="interactive-chart-shell">
+      <svg
+        className={`equity-chart ${view}`}
+        onPointerLeave={() => setHoverIndex(null)}
+        onPointerMove={(event) => updateHover(event.clientX, event.currentTarget)}
+        role="img"
+        viewBox={`0 0 ${width} ${height}`}
+        aria-label={`${label} ${chartTitle(view)}`}
+      >
+        <line x1="0" x2={width} y1={height - 1} y2={height - 1} />
+        <line x1="0" x2={width} y1="1" y2="1" />
+        {baselineY == null ? null : <line className="baseline" x1="0" x2={width} y1={baselineY} y2={baselineY} />}
+        <path d={path} />
+        {hoverPoint == null ? null : (
+          <g>
+            <line className="hover-line" x1={hoverX} x2={hoverX} y1="0" y2={height} />
+            <circle className="hover-dot" cx={hoverX} cy={hoverY} r="5" />
+          </g>
+        )}
+      </svg>
+      {hoverPoint == null ? null : (
+        <div
+          className="chart-tooltip"
+          style={{
+            left: `${(hoverX / width) * 100}%`,
+            top: `${(hoverY / height) * 100}%`,
+          }}
+        >
+          <span>{hoverPoint.date}</span>
+          <strong>{formatChartValue(hoverPoint.value, view)}</strong>
+          <small>{hoverPoint.position} - {hoverPoint.reason}</small>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1381,10 +1520,59 @@ function MetricCard({ label, value, tone }: { label: string; value: string; tone
   );
 }
 
-function samplePoints(points: StrategyPoint[], target: number) {
-  if (points.length <= target) return points;
-  const step = Math.ceil(points.length / target);
-  return points.filter((_, index) => index % step === 0 || index === points.length - 1);
+function chartPoints(points: StrategyPoint[], view: ChartView, range: ChartRange, cohort: EntryCohort | null): ChartPoint[] {
+  if (view === "cohort" && cohort) {
+    const start = points[cohort.startIndex];
+    if (!start || start.equity <= 0) return [];
+    return points.slice(cohort.startIndex).map((point) => ({
+      ...point,
+      value: (point.equity / start.equity) * 100,
+    }));
+  }
+
+  const ranged = range === "all" ? points : points.slice(Math.max(0, points.length - RANGE_TO_TRADING_DAYS[range]));
+  return ranged.map((point) => ({
+    ...point,
+    value: view === "drawdown" ? point.drawdown : point.equity,
+  }));
+}
+
+function chartMin(values: number[], view: ChartView) {
+  const min = Math.min(...values);
+  if (view === "drawdown") return Math.min(min, -0.01);
+  if (view === "cohort") return Math.min(min, 100) * 0.98;
+  return min * 0.96;
+}
+
+function chartMax(values: number[], view: ChartView) {
+  const max = Math.max(...values);
+  if (view === "drawdown") return 0;
+  if (view === "cohort") return Math.max(max, 100) * 1.02;
+  return max * 1.02;
+}
+
+function chartTitle(view: ChartView) {
+  if (view === "drawdown") return "Drawdown chart";
+  if (view === "cohort") return "Worst-start recovery path";
+  return "Equity curve";
+}
+
+function chartSubtitle(run: StrategyRun, view: ChartView, range: ChartRange, cohort: EntryCohort | null) {
+  if (view === "cohort" && cohort) {
+    return `${cohort.startDate} to ${run.stats.endDate}, normalized to 100`;
+  }
+  if (view === "cohort") return "Select a stress-test row to inspect a start path";
+  return `${rangeLabel(range)} - ${run.stats.startDate} to ${run.stats.endDate}`;
+}
+
+function rangeLabel(range: ChartRange) {
+  return CHART_RANGE_OPTIONS.find((option) => option.value === range)?.label ?? "All";
+}
+
+function formatChartValue(value: number, view: ChartView) {
+  if (view === "drawdown") return formatPercent(value);
+  if (view === "cohort") return value.toFixed(1);
+  return formatCurrency(value);
 }
 
 function hasCompleteHistories(histories: HistoryMap): histories is CompleteHistoryMap {
@@ -1428,6 +1616,10 @@ function calendarDays(start: string, end: string) {
 function clampNumber(value: number, min: number, max: number) {
   if (!Number.isFinite(value)) return min;
   return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function formatPercent(value: number) {

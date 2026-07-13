@@ -152,6 +152,38 @@ h3 {
   opacity: 0.62;
 }
 
+.control-chip,
+.table-button {
+  min-height: 34px;
+  border-radius: 7px;
+  font-weight: 800;
+}
+
+.control-chip {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: #263237;
+  padding: 0 11px;
+}
+
+.control-chip.active {
+  border-color: var(--teal);
+  background: #e7f4f2;
+  color: var(--teal-strong);
+}
+
+.control-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.table-button {
+  border: 1px solid rgba(17, 106, 104, 0.28);
+  background: #eef7f6;
+  color: var(--teal-strong);
+  padding: 0 10px;
+}
+
 .control-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -382,6 +414,20 @@ td small,
   padding: 14px;
 }
 
+.chart-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.segmented-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .stress-panel {
   margin-top: 16px;
   border: 1px solid var(--border);
@@ -469,6 +515,12 @@ td small,
   width: 100%;
   height: min(34vw, 320px);
   min-height: 220px;
+  touch-action: none;
+}
+
+.interactive-chart-shell {
+  position: relative;
+  min-width: 0;
 }
 
 .equity-chart line {
@@ -482,6 +534,67 @@ td small,
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 4;
+}
+
+.equity-chart.drawdown path {
+  stroke: var(--red);
+}
+
+.equity-chart.cohort path {
+  stroke: var(--amber);
+}
+
+.equity-chart .baseline {
+  stroke: #aab6b5;
+  stroke-dasharray: 7 6;
+  stroke-width: 2;
+}
+
+.equity-chart .hover-line {
+  stroke: rgba(24, 33, 36, 0.34);
+  stroke-width: 1.4;
+}
+
+.equity-chart .hover-dot {
+  fill: #ffffff;
+  stroke: var(--teal-strong);
+  stroke-width: 3;
+}
+
+.chart-tooltip {
+  position: absolute;
+  z-index: 2;
+  min-width: 190px;
+  max-width: min(260px, 72vw);
+  transform: translate(12px, -50%);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 28px rgba(17, 35, 38, 0.16);
+  color: var(--foreground);
+  padding: 10px 12px;
+  pointer-events: none;
+}
+
+.chart-tooltip span,
+.chart-tooltip small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.chart-tooltip strong {
+  display: block;
+  margin: 4px 0;
+  color: var(--ink);
+  font-size: 1.08rem;
+}
+
+.chart-tooltip small {
+  font-weight: 700;
+  line-height: 1.35;
+  text-transform: none;
 }
 
 .empty-chart {
@@ -592,6 +705,10 @@ tr:last-child td {
   border-bottom: 0;
 }
 
+tr.selected-row td {
+  background: #eef7f6;
+}
+
 .archive-section {
   margin-bottom: 16px;
   background: #f9fbfb;
@@ -689,5 +806,15 @@ tr:last-child td {
 
   .chart-title {
     display: grid;
+  }
+
+  .chart-controls,
+  .segmented-control {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .chart-tooltip {
+    display: none;
   }
 }
