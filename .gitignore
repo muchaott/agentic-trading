@@ -8,3 +8,10 @@ build/
 *.egg-info/
 prices.csv
 .DS_Store
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo

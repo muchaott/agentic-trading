@@ -1,0 +1,146 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_id": "spy-mean-reversion-demo-2026-07-12",
+  "artifact_hash": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "created_at": "2026-07-12T12:00:00Z",
+  "publication_state": "draft",
+  "instrument": {
+    "ticker": "SPY",
+    "name": "SPDR S&P 500 ETF Trust",
+    "exchange": "NYSE Arca",
+    "asset_class": "ETF",
+    "category": "US Large Blend",
+    "data_rights_status": "prototype_only"
+  },
+  "strategy_family": {
+    "family_id": "mean_reversion",
+    "name": "Mean Reversion",
+    "methodology_summary": "Demo Bollinger Band and RSI mean-reversion research family for product validation only."
+  },
+  "strategy_variant": {
+    "variant_id": "bb_rsi_mean_reversion_demo",
+    "slug": "bb-rsi-mean-reversion",
+    "status": "research",
+    "risk_band": "Moderate",
+    "approved_benchmarks": ["SPY"]
+  },
+  "strategy_rule_version": {
+    "rule_version_id": "bb_rsi_mean_reversion_v0_1",
+    "implementation_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "rule_text": "Demo rule: bullish when the daily close touches the lower Bollinger Band and RSI is below 30; bearish when the daily close touches the upper Bollinger Band and RSI is above 70.",
+    "parameters": {
+      "bollinger_window": 20,
+      "bollinger_sigma": 2,
+      "rsi_window": 14,
+      "bullish_rsi_threshold": 30,
+      "bearish_rsi_threshold": 70,
+      "rebalance_frequency": "daily"
+    }
+  },
+  "methodology_version": {
+    "methodology_version_id": "mean_reversion_methodology_v0_1",
+    "summary": "Signals are evaluated from daily closing data and summarized as hypothetical research output.",
+    "known_limitations": [
+      "Demo values are seeded fixtures and are not production performance claims.",
+      "Taxes, borrow costs, live execution constraints, and market impact are not modeled."
+    ]
+  },
+  "data_snapshot": {
+    "snapshot_id": "prototype_fixture_2026_07_12",
+    "vendor": "prototype_fixture",
+    "as_of_date": "2026-07-12",
+    "price_adjustment": "split_and_dividend_adjusted",
+    "license_scope": "prototype_only"
+  },
+  "assumptions": {
+    "assumptions_version_id": "default_research_assumptions_v0_1",
+    "initial_capital": 100000,
+    "commission_bps": 0,
+    "slippage_bps": 5,
+    "taxes_included": false,
+    "execution_timing": "Signals are evaluated at the close and modeled at the next session open for demo only."
+  },
+  "backtest_run": {
+    "run_id": "prototype_spy_mean_reversion_2026_07_12",
+    "engine_version": "prototype-static-fixture",
+    "sample_start": "2016-01-04",
+    "sample_end": "2025-12-31",
+    "benchmark_ticker": "SPY",
+    "created_by": "website-product-workstream"
+  },
+  "metric_snapshot": {
+    "cagr": 0.087,
+    "total_return": 1.31,
+    "annualized_volatility": 0.147,
+    "max_drawdown": -0.188,
+    "benchmark_return": 2.05,
+    "excess_return": -0.74,
+    "sharpe": 0.62,
+    "sortino": 0.88,
+    "turnover": 1.4,
+    "trade_count": 72,
+    "win_rate": 0.53,
+    "worst_month": -0.078,
+    "worst_year": -0.122
+  },
+  "performance_series": {
+    "normalized_equity": [
+      { "date": "2016-01-04", "value": 100000 },
+      { "date": "2018-12-31", "value": 127400 },
+      { "date": "2021-12-31", "value": 186200 },
+      { "date": "2023-12-29", "value": 202800 },
+      { "date": "2025-12-31", "value": 231000 }
+    ],
+    "benchmark_equity": [
+      { "date": "2016-01-04", "value": 100000 },
+      { "date": "2018-12-31", "value": 134600 },
+      { "date": "2021-12-31", "value": 228900 },
+      { "date": "2023-12-29", "value": 254100 },
+      { "date": "2025-12-31", "value": 305000 }
+    ],
+    "drawdown": [
+      { "date": "2016-01-04", "value": 0 },
+      { "date": "2018-12-24", "value": -0.146 },
+      { "date": "2020-03-23", "value": -0.188 },
+      { "date": "2022-10-14", "value": -0.132 },
+      { "date": "2025-12-31", "value": -0.021 }
+    ],
+    "monthly_returns": [
+      { "date": "2025-08-31", "value": 0.018 },
+      { "date": "2025-09-30", "value": -0.012 },
+      { "date": "2025-10-31", "value": 0.009 },
+      { "date": "2025-11-30", "value": 0.021 },
+      { "date": "2025-12-31", "value": 0.006 }
+    ],
+    "yearly_returns": [
+      { "date": "2021-12-31", "value": 0.214 },
+      { "date": "2022-12-31", "value": -0.122 },
+      { "date": "2023-12-31", "value": 0.158 },
+      { "date": "2024-12-31", "value": 0.092 },
+      { "date": "2025-12-31", "value": 0.074 }
+    ]
+  },
+  "research_report": {
+    "title": "SPY Mean-Reversion Demo Research Artifact",
+    "summary": "Prototype-only artifact used to validate the website ingestion, review, and display contract.",
+    "limitations": [
+      "This fixture is not investment advice and is not a production performance claim.",
+      "The values are seeded examples for product testing."
+    ],
+    "methodology_url": "/methodology#mean-reversion"
+  },
+  "disclosure": {
+    "disclosure_version_id": "hypothetical_research_disclosure_v0_1",
+    "performance_type": "hypothetical_backtest",
+    "no_advice_text": "This research artifact is for product validation and educational display only.",
+    "no_guarantee_text": "Hypothetical performance does not guarantee future results.",
+    "conflict_disclosure": "The publisher may evaluate related strategies or instruments."
+  },
+  "content_review": {
+    "stage": "draft",
+    "quant_reviewer": null,
+    "compliance_reviewer": null,
+    "approved_at": null,
+    "review_notes": "Prototype-only fixture for validating the MVP artifact contract."
+  }
+}
