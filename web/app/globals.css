@@ -367,12 +367,108 @@ td small,
 
 .workbench,
 .comparison-section,
+.sweep-section,
 .archive-section {
   margin-top: 22px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.86);
   padding: 18px;
+}
+
+.sweep-note {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  border: 1px solid rgba(164, 99, 22, 0.3);
+  border-radius: 8px;
+  background: #fff8ea;
+  padding: 14px;
+}
+
+.sweep-note strong {
+  color: var(--ink);
+  font-size: 0.98rem;
+}
+
+.sweep-note span {
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.sweep-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.sweep-card {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 15px;
+}
+
+.sweep-card > span {
+  color: var(--teal-strong);
+  font-size: 0.75rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.sweep-card strong {
+  color: var(--ink);
+  font-size: 1.04rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.sweep-card p {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.sweep-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.sweep-metrics b,
+.sweep-metrics small {
+  display: block;
+}
+
+.sweep-metrics b {
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.sweep-metrics small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.sweep-table table {
+  min-width: 1180px;
+}
+
+.sweep-rules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
 }
 
 .workbench-head,
@@ -761,6 +857,11 @@ tr.selected-row td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .sweep-grid,
+  .sweep-rules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .stress-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -792,6 +893,8 @@ tr.selected-row td {
   .snapshot-grid,
   .strategy-grid,
   .metrics-row,
+  .sweep-grid,
+  .sweep-rules,
   .stress-summary {
     grid-template-columns: 1fr;
   }

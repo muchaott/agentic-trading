@@ -100,6 +100,20 @@ type StrategyRun = {
   entryStress: EntryStressTest;
 };
 
+type Strategy2SweepRow = {
+  bucket: string;
+  name: string;
+  description: string;
+  annualizedIrr: number;
+  maxDrawdown: number;
+  finalEquity: number;
+  moneyMultiple: number;
+  totalContributions: number;
+  endingTqqqWeight: number;
+  actionCounts: Array<[string, number]>;
+  rules: string[];
+};
+
 type HistoryMap = Partial<Record<SymbolKey, Bar[]>>;
 type CompleteHistoryMap = Record<SymbolKey, Bar[]>;
 
@@ -126,6 +140,117 @@ const RANGE_TO_TRADING_DAYS: Record<Exclude<ChartRange, "all">, number> = {
   "1y": 252,
 };
 const STRATEGY_ORDER: StrategyId[] = ["S1", "A", "B", "C"];
+
+const STRATEGY_2_SWEEP = {
+  generatedAt: "2026-07-13T22:25:27Z",
+  period: "2010-04-01 to 2026-07-01",
+  months: 196,
+  metricNote: "Monthly-contribution tests use annualized IRR, not lump-sum CAGR.",
+  champions: [
+    {
+      bucket: "Max IRR",
+      name: "cagr_grabber_t40_h10_dd20_v35",
+      description: "Higher persistent TQQQ target with 10% high-valuation cap.",
+      annualizedIrr: 0.24678792933720994,
+      maxDrawdown: -0.4332872842919604,
+      finalEquity: 19895978.01902479,
+      moneyMultiple: 9.565374047608072,
+      totalContributions: 2080000,
+      endingTqqqWeight: 0.11942047989347097,
+      actionCounts: [["High valuation", 134], ["Minor bottom", 12], ["Normal", 13], ["Overheat trim", 37]],
+      rules: [
+        "Normal regime target: 40% TQQQ.",
+        "High-valuation target: cap TQQQ at 10%.",
+        "Bottom deployment: 25% TQQQ on minor bottoms and 80% on major bottoms.",
+        "Stress override: deploy 65% TQQQ when drawdown is at least -20% and VIX is 35 or higher.",
+        "Reserve asset is BIL; overheat trims 8.33% per signal and keeps 10% in cash.",
+      ],
+    },
+    {
+      bucket: "Best under -35% DD",
+      name: "ladder_t100_h050_oh00_dd25_v30",
+      description: "TQQQ satellite ladder with limited high-valuation exposure and drawdown/VIX stress deployment.",
+      annualizedIrr: 0.21316336688728899,
+      maxDrawdown: -0.34160459951183864,
+      finalEquity: 14337636.93483883,
+      moneyMultiple: 6.893094680210976,
+      totalContributions: 2080000,
+      endingTqqqWeight: 0.06101436811588035,
+      actionCounts: [["High valuation", 134], ["Minor bottom", 11], ["Normal", 13], ["Overheat trim", 37], ["Stress override", 1]],
+      rules: [
+        "Normal regime target: 10% TQQQ.",
+        "High-valuation target: cap TQQQ at 5%.",
+        "Bottom deployment: 10% TQQQ on minor bottoms and 80% on major bottoms.",
+        "Stress override: deploy 35% TQQQ when drawdown is at least -25% and VIX is 30 or higher.",
+        "Reserve asset is BIL; trims rotate exposure back toward reserve rather than forcing cash.",
+      ],
+    },
+    {
+      bucket: "Best under -40% DD",
+      name: "ladder_t250_h100_oh00_dd25_v30",
+      description: "A higher-return ladder that accepts a deeper drawdown budget than the QQQ-like variant.",
+      annualizedIrr: 0.2316667056731021,
+      maxDrawdown: -0.393440134028437,
+      finalEquity: 17166444.957491178,
+      moneyMultiple: 8.253098537255374,
+      totalContributions: 2080000,
+      endingTqqqWeight: 0.10866333706235783,
+      actionCounts: [["High valuation", 134], ["Minor bottom", 11], ["Normal", 13], ["Overheat trim", 37], ["Stress override", 1]],
+      rules: [
+        "Normal regime target: 25% TQQQ.",
+        "High-valuation target: cap TQQQ at 10%.",
+        "Bottom deployment: 20% TQQQ on minor bottoms and 80% on major bottoms.",
+        "Stress override: deploy 50% TQQQ when drawdown is at least -25% and VIX is 30 or higher.",
+        "Reserve asset is BIL; same trim cadence as the lower-drawdown ladder.",
+      ],
+    },
+    {
+      bucket: "Best QQQ-like DD",
+      name: "ladder_t100_h050_oh00_dd25_v30",
+      description: "Same configuration as the best under -35% drawdown bucket; it is the cleanest QQQ-like drawdown champion in this sweep.",
+      annualizedIrr: 0.21316336688728899,
+      maxDrawdown: -0.34160459951183864,
+      finalEquity: 14337636.93483883,
+      moneyMultiple: 6.893094680210976,
+      totalContributions: 2080000,
+      endingTqqqWeight: 0.06101436811588035,
+      actionCounts: [["High valuation", 134], ["Minor bottom", 11], ["Normal", 13], ["Overheat trim", 37], ["Stress override", 1]],
+      rules: [
+        "Use the same ladder_t100_h050_oh00_dd25_v30 configuration.",
+        "Its -34.16% max drawdown is close to QQQ DCA's -31.95% drawdown in the same monthly-contribution study.",
+        "It outperformed QQQ DCA on annualized IRR in the sweep: 21.32% versus 19.90%.",
+      ],
+    },
+  ] satisfies Strategy2SweepRow[],
+  baselines: [
+    {
+      bucket: "QQQ DCA",
+      name: "QQQ DCA",
+      description: "Monthly contribution baseline into QQQ.",
+      annualizedIrr: 0.1989545438121041,
+      maxDrawdown: -0.3195069085006923,
+      finalEquity: 12240333.604621261,
+      moneyMultiple: 6.245068165623093,
+      totalContributions: 1960000,
+      endingTqqqWeight: 0,
+      actionCounts: [],
+      rules: ["Buy QQQ with monthly contributions and hold through the sweep window."],
+    },
+    {
+      bucket: "TQQQ DCA",
+      name: "TQQQ DCA",
+      description: "Monthly contribution baseline into TQQQ.",
+      annualizedIrr: 0.4211838595997208,
+      maxDrawdown: -0.8000757718520393,
+      finalEquity: 107523547.58935538,
+      moneyMultiple: 54.858952851711926,
+      totalContributions: 1960000,
+      endingTqqqWeight: 0,
+      actionCounts: [],
+      rules: ["Buy TQQQ with monthly contributions and hold through the sweep window."],
+    },
+  ] satisfies Strategy2SweepRow[],
+};
 
 const STRATEGY_COPY: Record<StrategyId, Omit<StrategyRun, "points" | "stats" | "currentAllocation" | "latestReason" | "trades" | "entryStress">> = {
   S1: {
@@ -667,15 +792,17 @@ export default function Home() {
         </div>
       </section>
 
+      <Strategy2SweepSection />
+
       <section className="archive-section">
         <div>
           <span className="eyebrow">Archive</span>
           <h2>Previous strategies are retained as research, not the main product.</h2>
           <p>
-            The old ETF-wide Bollinger/RSI entry screen is no longer ranked on the
-            main dashboard because it treated entries as positions and did not define
-            a careful trade exit. It stays here as a reference point while A/B/C get
-            the product focus.
+            The old ETF-wide Bollinger/RSI entry screen is no longer ranked on the live
+            dashboard because it treated entries as positions and did not define a careful
+            trade exit. It stays here as a reference point while Strategy 1, A/B/C, and
+            the Strategy 2 IRR sweep are reviewed separately.
           </p>
         </div>
         <div className="archive-grid">
@@ -1632,6 +1759,97 @@ function InteractiveBacktestChart({
   );
 }
 
+function Strategy2SweepSection() {
+  const allRows = [...STRATEGY_2_SWEEP.champions, ...STRATEGY_2_SWEEP.baselines];
+  return (
+    <section className="sweep-section">
+      <div className="section-head">
+        <div>
+          <span className="eyebrow">Strategy 2 IRR Sweep</span>
+          <h2>Monthly-contribution variants from the CAGR improvement report</h2>
+        </div>
+        <p>
+          Generated {STRATEGY_2_SWEEP.generatedAt.slice(0, 10)} across {STRATEGY_2_SWEEP.months} monthly executions.
+          Period: {STRATEGY_2_SWEEP.period}. These use annualized IRR, so they should not be directly ranked against
+          the live lump-sum CAGR cards above.
+        </p>
+      </div>
+
+      <div className="sweep-note">
+        <strong>{STRATEGY_2_SWEEP.metricNote}</strong>
+        <span>
+          The report says the cleanest path to higher IRR is more persistent TQQQ exposure, but drawdown rises quickly.
+          These variants are research until costs, taxes, and walk-forward splits are added.
+        </span>
+      </div>
+
+      <div className="sweep-grid" aria-label="Strategy 2 champion variants">
+        {STRATEGY_2_SWEEP.champions.map((row) => (
+          <article className="sweep-card" key={`${row.bucket}-${row.name}`}>
+            <span>{row.bucket}</span>
+            <strong>{row.name}</strong>
+            <p>{row.description}</p>
+            <div className="sweep-metrics">
+              <b>{formatPercent(row.annualizedIrr)}<small>IRR</small></b>
+              <b>{formatPercent(row.maxDrawdown)}<small>Max DD</small></b>
+              <b>{formatMultiple(row.moneyMultiple)}<small>Multiple</small></b>
+              <b>{formatPercent(row.endingTqqqWeight)}<small>Ending TQQQ</small></b>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="table-wrap sweep-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Bucket</th>
+              <th>Name</th>
+              <th>IRR</th>
+              <th>Max DD</th>
+              <th>Final equity</th>
+              <th>Multiple</th>
+              <th>Contributions</th>
+              <th>Ending TQQQ</th>
+              <th>Action mix</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allRows.map((row) => (
+              <tr key={`${row.bucket}-${row.name}`}>
+                <td>{row.bucket}</td>
+                <td>
+                  <strong>{row.name}</strong>
+                  <small>{row.description}</small>
+                </td>
+                <td>{formatPercent(row.annualizedIrr)}</td>
+                <td>{formatPercent(row.maxDrawdown)}</td>
+                <td>{formatCurrency(row.finalEquity)}</td>
+                <td>{formatMultiple(row.moneyMultiple)}</td>
+                <td>{formatCurrency(row.totalContributions)}</td>
+                <td>{formatPercent(row.endingTqqqWeight)}</td>
+                <td>{row.actionCounts.length ? row.actionCounts.map(([label, count]) => `${label}: ${count}`).join(", ") : "Baseline"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="sweep-rules">
+        {STRATEGY_2_SWEEP.champions.map((row) => (
+          <section className="panel" key={`rules-${row.bucket}-${row.name}`}>
+            <span className="section-kicker">{row.bucket}</span>
+            <h3>{row.name}</h3>
+            <ul className="rule-list">
+              {row.rules.map((rule) => <li key={rule}>{rule}</li>)}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function MetricCard({ label, value, tone }: { label: string; value: string; tone: "positive" | "warning" | "danger" | "calm" | "neutral" }) {
   return (
     <article className={`metric ${tone}`}>
@@ -1757,6 +1975,10 @@ function formatCurrency(value: number) {
 
 function formatNumber(value: number, decimals: number) {
   return value.toFixed(decimals);
+}
+
+function formatMultiple(value: number) {
+  return `${value.toFixed(2)}x`;
 }
 
 function stressMetricTone(loss: number): "positive" | "warning" | "danger" | "calm" | "neutral" {

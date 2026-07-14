@@ -36,6 +36,9 @@ test("server-renders the ETF strategy dashboard", async () => {
   assert.match(html, /Candidate A/);
   assert.match(html, /Candidate B/);
   assert.match(html, /Candidate C/);
+  assert.match(html, /Strategy 2 IRR Sweep/);
+  assert.match(html, /cagr_grabber_t40_h10_dd20_v35/);
+  assert.match(html, /ladder_t250_h100_oh00_dd25_v30/);
   assert.match(html, /bad-timing stress/);
   assert.match(html, /Archived Strategy 2/);
   assert.match(html, /Current allocation/);
@@ -54,6 +57,9 @@ test("keeps the finished app free of starter preview wiring", async () => {
   assert.match(page, /runCandidateB/);
   assert.match(page, /runCandidateC/);
   assert.match(page, /Saved package snapshot: 2016-07-08 to 2026-07-07/);
+  assert.match(page, /STRATEGY_2_SWEEP/);
+  assert.match(page, /Strategy2SweepSection/);
+  assert.match(page, /Monthly-contribution tests use annualized IRR/);
   assert.match(page, /analyzeEntryTiming/);
   assert.match(page, /InteractiveBacktestChart/);
   assert.match(page, /chartRange/);
